@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { ButtonLink } from "@/components/ui/button-link";
+import { HomeHeroVideo } from "@/components/home-hero-video";
 
 const highlights = [
   {
@@ -165,16 +166,7 @@ export default function HomePage() {
               </div>
 
               <div className="overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#0a111b] shadow-soft">
-                <video
-                  className="block aspect-[16/10] w-full object-cover"
-                  src="/engage.mp4"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  controls={false}
-                />
+                <HomeHeroVideo />
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -261,7 +253,7 @@ export default function HomePage() {
 
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-2 lg:px-8 lg:pb-24">
         <div className="grid gap-6 lg:grid-cols-[.92fr_1.08fr]">
-          <div className="rounded-[2rem] border border-white/10 bg-[#131c29] p-8 shadow-soft">
+          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-pickle-200">
               Why it works
             </div>
@@ -280,7 +272,7 @@ export default function HomePage() {
             {whyItWorks.map((text) => (
               <div
                 key={text}
-                className="rounded-[1.35rem] border border-white/10 bg-[#131c29] p-5 shadow-soft"
+                className="rounded-[1.35rem] border border-white/10 bg-white/5 p-5 shadow-soft"
               >
                 <div className="text-sm font-medium leading-7 text-white">
                   {text}

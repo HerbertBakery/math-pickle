@@ -4,7 +4,10 @@ import { Inter } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap"
+});
 
 export const metadata: Metadata = {
   title: "MathPickle",
@@ -14,12 +17,20 @@ export const metadata: Metadata = {
 const themeBootScript = `
 (function () {
   try {
-    var savedTheme = localStorage.getItem("mathpickle-theme");
-    var useDark = savedTheme ? savedTheme === "dark" : true;
-    if (useDark) document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
+    var stored = localStorage.getItem("mathpickle-theme");
+    var theme = stored === "light" ? "light" : "dark";
+    var root = document.documentElement;
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    root.setAttribute("data-theme-ready", "true");
   } catch (e) {
     document.documentElement.classList.add("dark");
+    document.documentElement.setAttribute("data-theme-ready", "true");
   }
 })();
 `;
@@ -27,10 +38,10 @@ const themeBootScript = `
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.className} bg-canvas text-ink transition-colors duration-200 dark:bg-[#08111b] dark:text-white`}
-      >
+      <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
+      <body className={`${inter.className} bg-canvas text-ink dark:bg-[#08111b] dark:text-white`}>
         <div className="min-h-screen">
           <SiteHeader />
           {children}
