@@ -1,0 +1,2201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Animal Subtraction</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --text:#e7eefc;
+      --muted:#a8b3c7;
+
+      --warn:#fbbf24;
+      --bad:#fb7185;
+
+      --shadow: 0 12px 30px rgba(0,0,0,0.35);
+
+      --red:#ff4b4b;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 30% 0%, #121a28 0%, var(--bg) 60%);
+      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      min-height:100vh;
+      overflow:hidden;
+    }
+
+    .app{
+      width:100vw;
+      height:100vh;
+      margin:0;
+      display:grid;
+      grid-template-columns: 1fr;
+      align-items:stretch;
+    }
+
+    .sidePanel{
+      position:fixed;
+      top:0; left:0;
+      height:100vh;
+      width:min(360px, 92vw);
+      transform: translateX(-105%);
+      transition: transform 220ms ease;
+      z-index:9000;
+      border-right:1px solid rgba(255,255,255,0.10);
+      box-shadow: 24px 0 60px rgba(0,0,0,0.55);
+      background: linear-gradient(180deg, rgba(18,26,40,0.98), rgba(11,15,20,0.96));
+      backdrop-filter: blur(8px);
+    }
+    .sidePanel.open{ transform: translateX(0); }
+
+    .sideInner{
+      padding: 72px 14px 16px 14px;
+    }
+
+    h1{ margin:0 0 10px 0; font-size:16px; letter-spacing:0.2px; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0 12px 0; }
+    .label{ font-size:12px; color:var(--muted); }
+
+    select{
+      appearance:none;
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      color:var(--text);
+      background: rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      outline:none;
+      min-width: 200px;
+    }
+    select:hover{ background: rgba(255,255,255,0.10); }
+
+    button{
+      appearance:none;
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:900;
+      cursor:pointer;
+      color:var(--text);
+      background: rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    button:hover{ background: rgba(255,255,255,0.10); }
+    button.primary{
+      background: linear-gradient(180deg, rgba(47,111,255,0.30), rgba(47,111,255,0.18));
+      border:1px solid rgba(47,111,255,0.35);
+    }
+    button.danger{
+      background: rgba(255,75,75,0.12);
+      border:1px solid rgba(255,75,75,0.22);
+    }
+    button:disabled{ opacity:0.45; cursor:not-allowed; }
+
+    .customTools{
+      display:none;
+      margin: 8px 0 0 0;
+      padding: 10px 10px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .customTools.show{ display:block; }
+    .customTools .hint{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 8px;
+    }
+    .fileRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    input[type="file"]{ display:none; }
+
+    .pillMini{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      background: rgba(0,0,0,0.22);
+      border:1px solid rgba(255,255,255,0.10);
+      color: rgba(231,238,252,0.92);
+      font-weight:900;
+      font-size:12px;
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .hamburger{
+      position:fixed;
+      top:14px; left:14px;
+      z-index:9500;
+      width:46px; height:46px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,0.35);
+      border:1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+      cursor:pointer;
+      user-select:none;
+    }
+    .hamburger:hover{ background: rgba(0,0,0,0.45); }
+    .hamburger svg{ width:20px; height:20px; opacity:0.92; }
+
+    .scrim{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,0.45);
+      z-index:8900;
+      display:none;
+    }
+    .scrim.show{ display:block; }
+
+    .boardWrap{
+      width:100vw;
+      height:100vh;
+      padding:0;
+    }
+    .board{
+      position:relative;
+      width:100vw;
+      height:100vh;
+      border-radius:0;
+      overflow:hidden;
+      border:none;
+      background: #0d121a;
+      box-shadow:none;
+      touch-action: none;
+    }
+    .board.blank{ background:#000; }
+    .bgImg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      transform: none;
+      filter: saturate(1.05) contrast(1.02);
+    }
+    .bgImg.hidden{ display:none; }
+
+    .vignette{
+      position:absolute;
+      inset:0;
+      background: radial-gradient(closest-side at 50% 40%, rgba(0,0,0,0.06), rgba(0,0,0,0.60));
+      pointer-events:none;
+    }
+
+    .hintLine{ position:absolute; inset:0; pointer-events:none; }
+    svg{ width:100%; height:100%; display:block; }
+
+    .edge{
+      stroke: rgba(255,255,255,0.82);
+      stroke-width: 6;
+      stroke-linecap: round;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
+    }
+    .edge.dim{
+      stroke: rgba(255,255,255,0.18);
+      stroke-width: 3;
+    }
+
+    .node{
+      position:absolute;
+      width:84px;
+      height:84px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:950;
+      font-size:22px;
+      user-select:none;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 14px 26px rgba(0,0,0,0.35);
+      backdrop-filter: blur(1px);
+      overflow:hidden;
+      touch-action:none;
+
+      background: rgba(255,255,255,0.10);
+      border: 6px solid rgba(255,255,255,0.95);
+      color: rgba(255,255,255,0.92);
+      cursor:pointer;
+    }
+    .node.empty{ font-size:0px; }
+
+    .node.layout{
+      cursor: grab;
+      box-shadow:
+        0 14px 26px rgba(0,0,0,0.35),
+        0 0 0 10px rgba(255,255,255,0.10),
+        0 0 28px rgba(255,255,255,0.20);
+    }
+    .node.layout:active{ cursor: grabbing; }
+
+    .node.swap{
+      cursor: grab;
+      box-shadow:
+        0 14px 26px rgba(0,0,0,0.35),
+        0 0 0 10px rgba(47,111,255,0.12),
+        0 0 28px rgba(47,111,255,0.22);
+    }
+    .node.swapping{
+      cursor: grabbing;
+      opacity: 0.92;
+      transform: translate(-50%, -50%) scale(1.04);
+      box-shadow:
+        0 18px 34px rgba(0,0,0,0.45),
+        0 0 0 10px rgba(47,111,255,0.16),
+        0 0 32px rgba(47,111,255,0.28);
+    }
+
+    .node.pick{
+      border-color: rgba(47,111,255,0.95) !important;
+      box-shadow:
+        0 14px 26px rgba(0,0,0,0.35),
+        0 0 0 10px rgba(47,111,255,0.12),
+        0 0 26px rgba(47,111,255,0.35);
+      animation: pulsePick 900ms ease-in-out infinite;
+    }
+    @keyframes pulsePick{
+      0%,100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.05); }
+    }
+
+    .node.needChange{
+      border-color: rgba(251,191,36,0.98) !important;
+      box-shadow:
+        0 14px 26px rgba(0,0,0,0.35),
+        0 0 0 10px rgba(251,191,36,0.12),
+        0 0 24px rgba(251,191,36,0.45);
+      animation: pulseNeed 900ms ease-in-out infinite;
+    }
+    @keyframes pulseNeed{
+      0%,100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.06); }
+    }
+
+    .node.dup{
+      border-color: rgba(251,191,36,0.98) !important;
+      animation: pulseNeed 900ms ease-in-out infinite;
+    }
+
+    .midDrop{
+      position:absolute;
+      width:110px;
+      height:80px;
+      transform: translate(-50%, -50%);
+      pointer-events:auto;
+      background: transparent;
+      border-radius: 14px;
+    }
+
+    .midToken{
+      position:absolute;
+      width:78px;
+      height:78px;
+      transform: translate(-50%, -50%);
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:1000;
+      font-size:22px;
+      color: rgba(255,255,255,0.96);
+      background: rgba(255,75,75,0.26);
+      border: 5px solid rgba(255,75,75,0.85);
+      box-shadow:
+        0 14px 26px rgba(0,0,0,0.35),
+        0 10px 22px rgba(0,0,0,0.35);
+      user-select:none;
+      pointer-events:none;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.45);
+    }
+
+    .midToken.bad::after{
+      content:"✕";
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:58px;
+      font-weight:1000;
+      color: rgba(251,113,133,0.92);
+      text-shadow: 0 12px 24px rgba(0,0,0,0.55);
+      pointer-events:none;
+    }
+    .midToken.dup{
+      animation: pulseNeed 900ms ease-in-out infinite;
+      border-color: rgba(251,191,36,0.98) !important;
+      background: rgba(251,191,36,0.15);
+    }
+
+    .bottomBar{
+      position:absolute;
+      left:12px; right:12px;
+      bottom:12px;
+      padding:10px 10px;
+      border-radius:16px;
+      background: rgba(0,0,0,0.42);
+      border:1px solid rgba(255,255,255,0.12);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      flex-wrap:wrap;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+    }
+    .bottomBar.show{ display:flex; }
+
+    .evenTok{
+      width:50px;
+      height:50px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:1000;
+      font-size:18px;
+      cursor:grab;
+      user-select:none;
+      background: rgba(255,75,75,0.16);
+      border:1px solid rgba(255,75,75,0.40);
+      color: rgba(255,255,255,0.96);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.22);
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+    .evenTok:active{ cursor:grabbing; }
+    .evenTok.dragging{
+      opacity:0.82;
+      transform: scale(1.05);
+      box-shadow: 0 16px 30px rgba(0,0,0,0.35);
+    }
+
+    .boardActions{
+      position:absolute;
+      top:12px;
+      right:12px;
+      display:flex;
+      gap:10px;
+      z-index:20;
+    }
+    .boardActions button{
+      padding:10px 12px;
+      border-radius:14px;
+      background: rgba(0,0,0,0.38);
+      border:1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+    }
+    .boardActions button:hover{ background: rgba(0,0,0,0.48); }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,0.58);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:9999;
+    }
+    .overlay.show{ display:flex; }
+    .modal{
+      width:min(520px, 96vw);
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+      padding:16px;
+    }
+    .modal h2{
+      margin:0 0 6px 0;
+      font-size:22px;
+      letter-spacing:0.2px;
+    }
+    .modal p{
+      margin:0 0 12px 0;
+      color: rgba(231,238,252,0.85);
+      line-height:1.45;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(0,0,0,0.28);
+      border:1px solid rgba(255,255,255,0.10);
+      color: rgba(231,238,252,0.92);
+      font-weight:900;
+      font-size:13px;
+      margin-bottom:12px;
+    }
+    .modal .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .tinyNote{
+      margin-top:10px;
+      font-size:12px;
+      color: rgba(231,238,252,0.70);
+      line-height:1.35;
+    }
+    .tinyCode{
+      margin-top:10px;
+      padding:10px;
+      border-radius:12px;
+      background: rgba(0,0,0,0.22);
+      border:1px solid rgba(255,255,255,0.10);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:11px;
+      color: rgba(231,238,252,0.90);
+      white-space: pre-wrap;
+      word-break: break-word;
+      display:none;
+    }
+    .tinyCode.show{ display:block; }
+  </style>
+</head>
+<body>
+
+  <div id="hamburger" class="hamburger" aria-label="Open menu" title="Menu">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M4 7h16M4 12h16M4 17h16" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+
+  <aside id="sidePanel" class="sidePanel" aria-label="Puzzle menu">
+    <div class="sideInner">
+      <h1>Animal Subtraction</h1>
+
+      <div class="row">
+        <span class="label">Puzzle</span>
+        <select id="puzzleSelect" aria-label="Choose puzzle">
+          <option value="dragonfly">Dragonfly</option>
+          <option value="starfish">Starfish</option>
+          <option value="seagull">Seagull</option>
+          <option value="ant">Ant</option>
+
+          <option value="spider">Spider</option>
+          <option value="bird">Bird</option>
+          <option value="snake">Snake</option>
+          <option value="monkey">Monkey</option>
+
+          <option value="millipede">Millipede</option>
+          <option value="caterpillar">Caterpillar</option>
+
+          <option value="goat">Goat</option>
+          <option value="shark">Shark</option>
+          <option value="elephant">Elephant</option>
+          <option value="bee">Bee</option>
+          <option value="hummingbird">Humming Bird</option>
+          <option value="butterfly">Butterfly</option>
+
+          <option value="custom">Custom (upload your own)</option>
+        </select>
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <button id="layoutBtn">Layout Mode: Off</button>
+        <button id="saveLayoutBtn" class="primary">Save Layout</button>
+      </div>
+
+      <div class="tinyNote">
+        Layout Mode: drag circles to position. Save Layout stores it in your browser for this puzzle.
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <button id="copyLayoutBtn">Copy Layout JSON</button>
+      </div>
+      <div id="layoutJson" class="tinyCode" aria-label="Layout json"></div>
+
+      <div id="customTools" class="customTools">
+        <div class="fileRow">
+          <button id="uploadBtn">Upload image</button>
+          <span class="pillMini">Builder</span>
+          <input id="imgFile" type="file" accept="image/*" />
+        </div>
+
+        <div class="fileRow">
+          <span class="label">Number of circles</span>
+          <select id="circleCountSelect" aria-label="How many circles">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7" selected>7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+          </select>
+          <button id="setCircleCountBtn">Set</button>
+        </div>
+
+        <div class="fileRow" style="margin-bottom:6px;">
+          <button class="primary" id="createPuzzleBtn">Create puzzle</button>
+          <button class="danger" id="clearCustomBtn">Clear custom</button>
+        </div>
+
+        <div class="hint" id="customHint"></div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="winOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Puzzle complete">
+    <div class="modal">
+      <h2>✅ Puzzle Complete!</h2>
+      <p>Well done — you solved it.</p>
+      <div class="pill">⏱️ Time taken: <span id="winTime">0:00</span></div>
+      <div class="actions">
+        <button class="primary" id="tryAgainBtn">Try again</button>
+        <button id="tryAnotherBtn">Choose another puzzle</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="boardWrap">
+      <div class="board" id="board">
+        <img id="bg" class="bgImg" alt="Animal puzzle background" decoding="async" fetchpriority="high" />
+        <div class="vignette"></div>
+
+        <div class="hintLine">
+          <svg id="edgeSvg" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+
+        <div class="boardActions">
+          <button class="primary" id="submitBtn">Submit Puzzle</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+
+        <div id="bottomBar" class="bottomBar" aria-label="Even numbers"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function makePlaceholderLayout(puzzleId, count){
+      const circles = [];
+      const edges = [];
+      const cx = 500, cy = 500;
+      const r = 340;
+
+      for(let i=0;i<count;i++){
+        const a = (-Math.PI/2) + (i * (2*Math.PI / count));
+        circles.push({
+          id: `b${i+1}`,
+          x: Math.round(cx + r * Math.cos(a)),
+          y: Math.round(cy + r * Math.sin(a))
+        });
+      }
+
+      for(let i=1;i<count;i++){
+        edges.push({
+          id: `e${i}`,
+          a: `b${i}`,
+          b: `b${i+1}`,
+          rid: `r${i}`
+        });
+      }
+
+      return { circles, edges };
+    }
+
+    function makeStarfishLayout(){
+      return {
+        circles: [
+          { id:"b1", x:546, y:452 },
+          { id:"b2", x:409, y:44  },
+          { id:"b3", x:731, y:119 },
+          { id:"b4", x:818, y:593 },
+          { id:"b5", x:530, y:843 },
+          { id:"b6", x:293, y:552 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b1", b:"b3", rid:"r2" },
+          { id:"e3", a:"b1", b:"b4", rid:"r3" },
+          { id:"e4", a:"b1", b:"b5", rid:"r4" },
+          { id:"e5", a:"b1", b:"b6", rid:"r5" },
+        ]
+      };
+    }
+
+    function makeSeagullLayout(){
+      return {
+        circles: [
+          { id:"b1", x:470, y:450 },
+          { id:"b2", x:322, y:192 },
+          { id:"b3", x:660, y:520 },
+          { id:"b4", x:900, y:600 },
+          { id:"b5", x:210, y:840 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b1", b:"b3", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b1", b:"b5", rid:"r4" },
+        ]
+      };
+    }
+
+    function makeAntLayout(){
+      return {
+        circles: [
+          { id:"b1", x:460, y:116 },
+          { id:"b2", x:743, y:256 },
+          { id:"b3", x:608, y:904 },
+          { id:"b4", x:392, y:802 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+        ]
+      };
+    }
+
+    function makeSpiderLayout(){
+      return {
+        circles: [
+          { id:"b1", x:506, y:518 },
+          { id:"b2", x:315, y:205 },
+          { id:"b3", x:67,  y:67  },
+          { id:"b4", x:651, y:168 },
+          { id:"b5", x:852, y:15  },
+          { id:"b6", x:347, y:757 },
+          { id:"b7", x:73,  y:916 },
+          { id:"b8", x:620, y:765 },
+          { id:"b9", x:838, y:980 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b1", b:"b4", rid:"r3" },
+          { id:"e4", a:"b4", b:"b5", rid:"r4" },
+          { id:"e5", a:"b1", b:"b6", rid:"r5" },
+          { id:"e6", a:"b6", b:"b7", rid:"r6" },
+          { id:"e7", a:"b1", b:"b8", rid:"r7" },
+          { id:"e8", a:"b8", b:"b9", rid:"r8" },
+        ]
+      };
+    }
+
+    function makeBirdLayout(){
+      return {
+        circles: [
+          { id:"b1", x:546, y:349 },
+          { id:"b2", x:291, y:618 },
+          { id:"b3", x:521, y:809 },
+          { id:"b4", x:94,  y:937 },
+          { id:"b5", x:144, y:611 },
+          { id:"b6", x:911, y:428 },
+        ],
+        edges: [
+          { id:"e1", a:"b5", b:"b4", rid:"r1" },
+          { id:"e2", a:"b2", b:"b5", rid:"r2" },
+          { id:"e3", a:"b2", b:"b1", rid:"r3" },
+          { id:"e4", a:"b1", b:"b6", rid:"r4" },
+          { id:"e5", a:"b2", b:"b3", rid:"r5" },
+        ]
+      };
+    }
+
+    function makeMonkeyLayout(){
+      return {
+        circles: [
+          { id:"b1", x:554, y:39  },
+          { id:"b2", x:666, y:286 },
+          { id:"b3", x:562, y:678 },
+          { id:"b4", x:152, y:793 },
+          { id:"b5", x:707, y:902 },
+          { id:"b6", x:928, y:900 },
+        ],
+        edges: [
+          { id:"e1", a:"b2", b:"b1", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b2", b:"b6", rid:"r4" },
+          { id:"e5", a:"b6", b:"b5", rid:"r5" },
+        ]
+      };
+    }
+
+    function makeSnakeLayout(){
+      return {
+        circles: [
+          { id:"b1", x:860, y:874 },
+          { id:"b2", x:575, y:834 },
+          { id:"b3", x:374, y:791 },
+          { id:"b4", x:185, y:749 },
+          { id:"b5", x:39,  y:706 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b4", b:"b5", rid:"r4" },
+        ]
+      };
+    }
+
+    function makeMillipedeLayout(){
+      return {
+        circles: [
+          { id:"b1", x:435, y:470 },
+          { id:"b2", x:488, y:166 },
+          { id:"b3", x:719, y:134 },
+          { id:"b4", x:832, y:536 },
+          { id:"b5", x:655, y:889 },
+          { id:"b6", x:399, y:784 },
+          { id:"b7", x:289, y:535 },
+          { id:"b8", x:207, y:310 },
+          { id:"b9", x:128, y:84  },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b4", b:"b5", rid:"r4" },
+          { id:"e5", a:"b5", b:"b6", rid:"r5" },
+          { id:"e6", a:"b6", b:"b7", rid:"r6" },
+          { id:"e7", a:"b7", b:"b8", rid:"r7" },
+          { id:"e8", a:"b8", b:"b9", rid:"r8" },
+        ]
+      };
+    }
+
+    function makeCaterpillarLayout(){
+      return {
+        circles: [
+          { id:"b1", x:319, y:75  },
+          { id:"b2", x:621, y:78  },
+          { id:"b3", x:248, y:510 },
+          { id:"b4", x:755, y:520 },
+          { id:"b5", x:172, y:886 },
+          { id:"b6", x:348, y:887 },
+          { id:"b7", x:657, y:891 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b1", b:"b3", rid:"r2" },
+          { id:"e3", a:"b2", b:"b4", rid:"r3" },
+          { id:"e4", a:"b3", b:"b5", rid:"r4" },
+          { id:"e5", a:"b3", b:"b6", rid:"r5" },
+          { id:"e6", a:"b4", b:"b7", rid:"r6" },
+        ]
+      };
+    }
+
+    function makeGoatLayout(){
+      return {
+        circles: [
+          { id:"b1", x:624, y:217 },
+          { id:"b2", x:754, y:403 },
+          { id:"b3", x:624, y:657 },
+          { id:"b4", x:923, y:612 },
+          { id:"b5", x:908, y:872 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b2", b:"b4", rid:"r3" },
+          { id:"e4", a:"b4", b:"b5", rid:"r4" },
+        ]
+      };
+    }
+
+    function makeElephantLayout(){
+      return {
+        circles: [
+          { id:"b1", x:224, y:67  },
+          { id:"b2", x:61,  y:216 },
+          { id:"b3", x:428, y:364 },
+          { id:"b4", x:265, y:623 },
+          { id:"b5", x:558, y:815 },
+          { id:"b6", x:754, y:184 },
+          { id:"b7", x:804, y:503 },
+          { id:"b8", x:828, y:822 },
+        ],
+        edges: [
+          { id:"e1", a:"b2", b:"b3", rid:"r1" },
+          { id:"e2", a:"b1", b:"b3", rid:"r2" },
+          { id:"e3", a:"b4", b:"b3", rid:"r3" },
+          { id:"e4", a:"b5", b:"b3", rid:"r4" },
+          { id:"e5", a:"b3", b:"b6", rid:"r5" },
+          { id:"e6", a:"b6", b:"b7", rid:"r6" },
+          { id:"e7", a:"b7", b:"b8", rid:"r7" },
+        ]
+      };
+    }
+
+    function makeSharkLayout(){
+      return {
+        circles: [
+          { id:"b1", x:432, y:141 },
+          { id:"b2", x:590, y:139 },
+          { id:"b3", x:712, y:333 },
+          { id:"b4", x:749, y:583 },
+          { id:"b5", x:679, y:809 },
+          { id:"b6", x:507, y:891 },
+          { id:"b7", x:309, y:813 },
+          { id:"b8", x:275, y:559 },
+          { id:"b9", x:309, y:310 },
+        ],
+        edges: [
+          { id:"e1", a:"b1", b:"b2", rid:"r1" },
+          { id:"e2", a:"b2", b:"b3", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b4", b:"b5", rid:"r4" },
+          { id:"e5", a:"b5", b:"b6", rid:"r5" },
+          { id:"e6", a:"b6", b:"b7", rid:"r6" },
+          { id:"e7", a:"b7", b:"b8", rid:"r7" },
+          { id:"e8", a:"b8", b:"b9", rid:"r8" },
+          { id:"e9", a:"b9", b:"b1", rid:"r9" },
+        ]
+      };
+    }
+
+    function makeButterflyLayout(){
+      return {
+        circles: [
+          { id:"b1", x:441, y:157 },
+          { id:"b2", x:528, y:141 },
+          { id:"b3", x:510, y:410 },
+          { id:"b4", x:170, y:560 },
+          { id:"b5", x:870, y:470 },
+          { id:"b6", x:440, y:740 },
+          { id:"b7", x:660, y:720 },
+        ],
+        edges: [
+          { id:"e1", a:"b3", b:"b1", rid:"r1" },
+          { id:"e2", a:"b3", b:"b2", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b3", b:"b5", rid:"r4" },
+          { id:"e5", a:"b3", b:"b6", rid:"r5" },
+          { id:"e6", a:"b3", b:"b7", rid:"r6" },
+          { id:"e7", a:"b4", b:"b6", rid:"r7" },
+          { id:"e8", a:"b5", b:"b7", rid:"r8" },
+        ]
+      };
+    }
+
+    function makeBeeLayout(){
+      return {
+        circles: [
+          { id:"b1", x:420, y:120 },
+          { id:"b2", x:580, y:120 },
+          { id:"b3", x:500, y:340 },
+          { id:"b4", x:150, y:420 },
+          { id:"b5", x:850, y:420 },
+          { id:"b6", x:500, y:610 },
+          { id:"b7", x:300, y:830 },
+          { id:"b8", x:700, y:830 },
+          { id:"b9", x:500, y:905 },
+        ],
+        edges: [
+          { id:"e1", a:"b3", b:"b1", rid:"r1" },
+          { id:"e2", a:"b3", b:"b2", rid:"r2" },
+          { id:"e3", a:"b3", b:"b4", rid:"r3" },
+          { id:"e4", a:"b3", b:"b5", rid:"r4" },
+          { id:"e5", a:"b3", b:"b6", rid:"r5" },
+          { id:"e6", a:"b6", b:"b9", rid:"r6" },
+          { id:"e7", a:"b6", b:"b7", rid:"r7" },
+          { id:"e8", a:"b6", b:"b8", rid:"r8" },
+        ]
+      };
+    }
+
+    function makeHummingbirdLayout(){
+      return {
+        circles: [
+          { id:"b1",  x:374, y:181 },
+          { id:"b2",  x:506, y:377 },
+          { id:"b3",  x:546, y:255 },
+          { id:"b4",  x:692, y:185 },
+          { id:"b5",  x:865, y:114 },
+          { id:"b6",  x:608, y:380 },
+          { id:"b7",  x:701, y:480 },
+          { id:"b8",  x:813, y:546 },
+          { id:"b9",  x:403, y:730 },
+          { id:"b10", x:526, y:890 },
+          { id:"b11", x:631, y:683 },
+        ],
+        edges: [
+          { id:"e1",  a:"b1",  b:"b2",  rid:"r1"  },
+          { id:"e2",  a:"b2",  b:"b9",  rid:"r2"  },
+          { id:"e3",  a:"b9",  b:"b10", rid:"r3"  },
+          { id:"e4",  a:"b10", b:"b11", rid:"r4"  },
+          { id:"e5",  a:"b11", b:"b2",  rid:"r5"  },
+          { id:"e6",  a:"b6",  b:"b3",  rid:"r6"  },
+          { id:"e7",  a:"b3",  b:"b4",  rid:"r7"  },
+          { id:"e8",  a:"b4",  b:"b5",  rid:"r8"  },
+          { id:"e9",  a:"b6",  b:"b7",  rid:"r9"  },
+          { id:"e10", a:"b7",  b:"b8",  rid:"r10" },
+        ]
+      };
+    }
+
+    const DEFAULT_LAYOUTS = {
+      dragonfly: {
+        circles: [
+          { id:"bTop", x:495, y:143 },
+          { id:"wRU",  x:938, y:129 },
+          { id:"wLU",  x:68,  y:59  },
+          { id:"bMid", x:494, y:443 },
+          { id:"wLL",  x:64,  y:369 },
+          { id:"wRL",  x:910, y:448 },
+          { id:"bBot", x:495, y:852 },
+        ],
+        edges: [
+          { id:"e1", a:"bMid", b:"bTop", rid:"rTop" },
+          { id:"e2", a:"bMid", b:"wLU",  rid:"rLU"  },
+          { id:"e3", a:"bMid", b:"wRU",  rid:"rRU"  },
+          { id:"e4", a:"bMid", b:"wRL",  rid:"rRL"  },
+          { id:"e5", a:"bMid", b:"wLL",  rid:"rLL"  },
+          { id:"e6", a:"bMid", b:"bBot", rid:"rBot" },
+        ],
+      },
+
+      starfish: makeStarfishLayout(),
+      seagull: makeSeagullLayout(),
+      ant: makeAntLayout(),
+
+      spider: makeSpiderLayout(),
+      bird: makeBirdLayout(),
+      snake: makeSnakeLayout(),
+      monkey: makeMonkeyLayout(),
+
+      millipede: makeMillipedeLayout(),
+      caterpillar: makeCaterpillarLayout(),
+
+      goat: makeGoatLayout(),
+      shark: makeSharkLayout(),
+      elephant: makeElephantLayout(),
+
+      bee: makeBeeLayout(),
+      hummingbird: makeHummingbirdLayout(),
+      butterfly: makeButterflyLayout(),
+    };
+
+    const PUZZLES = {
+      dragonfly:   { name:"Dragonfly",    img:"dragonfly.webp",    layoutKey:"animal_subtraction_dragonfly_white_midless_v5" },
+      starfish:    { name:"Starfish",     img:"starfish.webp",     layoutKey:"animal_subtraction_starfish_white_midless_v6" },
+      seagull:     { name:"Seagull",      img:"seagull.webp",      layoutKey:"animal_subtraction_seagull_v3" },
+      ant:         { name:"Ant",          img:"ant.webp",          layoutKey:"animal_subtraction_ant_v3" },
+
+      spider:      { name:"Spider",       img:"spider.webp",       layoutKey:"animal_subtraction_spider_pixel_v3" },
+      bird:        { name:"Bird",         img:"bird.webp",         layoutKey:"animal_subtraction_bird_pixel_v3" },
+      snake:       { name:"Snake",        img:"snake.webp",        layoutKey:"animal_subtraction_snake_pixel_v2" },
+      monkey:      { name:"Monkey",       img:"monkey.webp",       layoutKey:"animal_subtraction_monkey_pixel_v3" },
+
+      millipede:   { name:"Millipede",    img:"millipede.webp",    layoutKey:"animal_subtraction_millipede_pixel_v2" },
+      caterpillar: { name:"Caterpillar",  img:"caterpillar.webp",  layoutKey:"animal_subtraction_caterpillar_pixel_v3" },
+
+      goat:        { name:"Goat",         img:"goat.webp",         layoutKey:"animal_subtraction_goat_dist_v2" },
+      shark:       { name:"Shark",        img:"shark.webp",        layoutKey:"animal_subtraction_shark_pixel_v4" },
+      elephant:    { name:"Elephant",     img:"elephant.webp",     layoutKey:"animal_subtraction_elephant_dist_v2" },
+
+      bee:         { name:"Bee",          img:"bee.webp",          layoutKey:"animal_subtraction_bee_dist_v2" },
+      hummingbird: { name:"Humming Bird", img:"hummingbird.webp",  layoutKey:"animal_subtraction_hummingbird_pixel_v4" },
+      butterfly:   { name:"Butterfly",    img:"butterfly.webp",    layoutKey:"animal_subtraction_butterfly_pixel_v3" },
+
+      custom:      { name:"Custom",       img:"",                  layoutKey:"animal_subtraction_custom_manualedges_v1" }
+    };
+
+    const preloadedPuzzleImages = new Map();
+
+    function preloadSingleImage(src){
+      if(!src) return Promise.resolve(null);
+      if(preloadedPuzzleImages.has(src)) return Promise.resolve(preloadedPuzzleImages.get(src));
+
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.decoding = "async";
+        img.loading = "eager";
+        img.fetchPriority = "high";
+
+        img.onload = async () => {
+          try{
+            if (typeof img.decode === "function") {
+              await img.decode().catch(() => {});
+            }
+          } catch {}
+          preloadedPuzzleImages.set(src, img);
+          resolve(img);
+        };
+
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    function preloadAllPuzzleImages(){
+      const jobs = Object.values(PUZZLES)
+        .filter(cfg => cfg.img)
+        .map(cfg => preloadSingleImage(cfg.img));
+      return Promise.all(jobs);
+    }
+
+    function setBackgroundImage(src, altText){
+      elBg.alt = altText || "Animal puzzle background";
+      elBg.decoding = "async";
+      elBg.fetchPriority = "high";
+      elBg.src = src;
+    }
+
+    const state = {
+      puzzleId: "dragonfly",
+      layoutKey: PUZZLES.dragonfly.layoutKey,
+
+      circles: [],
+      edges: [],
+
+      oddPlaced: {},
+      evenPlaced: {},
+
+      submitted: false,
+
+      startedAt: 0,
+      solvedAt: 0,
+      winShown: false,
+
+      attempts: 0,
+      reportedSolvedForAttempt: false,
+      hostContext: {
+        puzzleSlug: "animal-subtraction",
+        classroomId: null,
+        assignmentId: null
+      },
+
+      mode: "play",
+      builderStage: "off",
+      builder: {
+        bgDataUrl: null,
+        circleTargetCount: 7,
+        edgePickFromId: null,
+      },
+
+      layoutMode: false,
+      dragging: null,
+      swapDrag: null,
+    };
+
+    const elBoard = document.getElementById("board");
+    const elBg = document.getElementById("bg");
+    const elSvg = document.getElementById("edgeSvg");
+    const elBottomBar = document.getElementById("bottomBar");
+
+    const elSubmitBtn = document.getElementById("submitBtn");
+    const elResetBtn = document.getElementById("resetBtn");
+
+    const elWinOverlay = document.getElementById("winOverlay");
+    const elWinTime = document.getElementById("winTime");
+    const elTryAgain = document.getElementById("tryAgainBtn");
+    const elTryAnother = document.getElementById("tryAnotherBtn");
+
+    const elHamburger = document.getElementById("hamburger");
+    const elSidePanel = document.getElementById("sidePanel");
+    const elScrim = document.getElementById("scrim");
+
+    const elPuzzleSelect = document.getElementById("puzzleSelect");
+    const elCustomTools = document.getElementById("customTools");
+    const elUploadBtn = document.getElementById("uploadBtn");
+    const elImgFile = document.getElementById("imgFile");
+    const elCircleCountSelect = document.getElementById("circleCountSelect");
+    const elSetCircleCountBtn = document.getElementById("setCircleCountBtn");
+    const elCreatePuzzleBtn = document.getElementById("createPuzzleBtn");
+    const elClearCustomBtn = document.getElementById("clearCustomBtn");
+    const elCustomHint = document.getElementById("customHint");
+
+    const elLayoutBtn = document.getElementById("layoutBtn");
+    const elSaveLayoutBtn = document.getElementById("saveLayoutBtn");
+    const elCopyLayoutBtn = document.getElementById("copyLayoutBtn");
+    const elLayoutJson = document.getElementById("layoutJson");
+
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+    function genOdds(n){ return Array.from({length:n}, (_,i)=>1+i*2); }
+    function genEvens(n){ return Array.from({length:n}, (_,i)=>2+i*2); }
+
+    function midpoint(a, b){
+      return { x: Math.round((a.x + b.x)/2), y: Math.round((a.y + b.y)/2) };
+    }
+
+    function circleById(id){ return state.circles.find(n => n.id === id) || null; }
+    function edgeByRid(rid){ return state.edges.find(e => e.rid === rid) || null; }
+
+    function allOddsSet(){
+      return state.circles.length>0 && state.circles.every(n => typeof state.oddPlaced[n.id] === "number");
+    }
+
+    function computeDuplicateOddCircleIds(){
+      const idsByValue = new Map();
+      for(const c of state.circles){
+        const v = state.oddPlaced[c.id];
+        if(typeof v !== "number") continue;
+        if(!idsByValue.has(v)) idsByValue.set(v, []);
+        idsByValue.get(v).push(c.id);
+      }
+      const dupIds = new Set();
+      for(const ids of idsByValue.values()){
+        if(ids.length > 1){
+          for(const id of ids) dupIds.add(id);
+        }
+      }
+      return dupIds;
+    }
+
+    function oddsValidUnique(){
+      if(!allOddsSet()) return { ok:false, dupIds:new Set() };
+      const dupIds = computeDuplicateOddCircleIds();
+      return { ok: dupIds.size === 0, dupIds };
+    }
+
+    function allEvensSet(){
+      return state.edges.length>0 && state.edges.every(e => typeof state.evenPlaced[e.rid] === "number");
+    }
+
+    function correctDifferenceForRid(rid){
+      const edge = edgeByRid(rid);
+      if(!edge) return null;
+      const a = state.oddPlaced[edge.a];
+      const b = state.oddPlaced[edge.b];
+      if(typeof a !== "number" || typeof b !== "number") return null;
+      return Math.abs(a - b);
+    }
+
+    function computeDuplicateEvenValues(){
+      const vals = Object.values(state.evenPlaced).filter(v => typeof v === "number");
+      const counts = new Map();
+      for(const v of vals) counts.set(v, (counts.get(v)||0)+1);
+      const dups = new Set();
+      for(const [k,c] of counts.entries()) if(c>1) dups.add(k);
+      return dups;
+    }
+
+    function isSolved(){
+      const ov = oddsValidUnique();
+      if(!ov.ok) return false;
+      if(!allEvensSet()) return false;
+
+      for(const e of state.edges){
+        if(state.evenPlaced[e.rid] !== correctDifferenceForRid(e.rid)) return false;
+      }
+      return computeDuplicateEvenValues().size === 0;
+    }
+
+    function formatElapsed(ms){
+      const totalSec = Math.max(0, Math.round(ms / 1000));
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${m}:${String(s).padStart(2,"0")}`;
+    }
+
+    function postPuzzleResult({ completed = false } = {}){
+      const now = performance.now();
+      const elapsedMs = Math.max(0, Math.round(now - state.startedAt));
+      const completionPct = completed ? 100 : 0;
+
+      window.parent.postMessage(
+        {
+          type: completed ? "mathpickle:puzzleComplete" : "mathpickle:puzzleResult",
+          payload: {
+            puzzleSlug: state.hostContext.puzzleSlug || "animal-subtraction",
+            classroomId: state.hostContext.classroomId,
+            assignmentId: state.hostContext.assignmentId,
+            variantSlug: state.puzzleId,
+            score: elapsedMs,
+            timeMs: elapsedMs,
+            attempts: Math.max(1, state.attempts),
+            completed,
+            completionPct,
+            metric: "time"
+          }
+        },
+        "*"
+      );
+    }
+
+    function showWinOverlay(){
+      state.winShown = true;
+      state.solvedAt = performance.now();
+      elWinTime.textContent = formatElapsed(state.solvedAt - state.startedAt);
+      elWinOverlay.classList.add("show");
+
+      if(!state.reportedSolvedForAttempt){
+        state.reportedSolvedForAttempt = true;
+        postPuzzleResult({ completed:true });
+      }
+    }
+
+    function hideWinOverlay(hard=false){
+      elWinOverlay.classList.remove("show");
+      if(hard){
+        state.winShown = false;
+        state.solvedAt = 0;
+      }
+    }
+
+    function openMenu(){
+      elSidePanel.classList.add("open");
+      elScrim.classList.add("show");
+    }
+    function closeMenu(){
+      elSidePanel.classList.remove("open");
+      elScrim.classList.remove("show");
+    }
+
+    function updateLayoutButtons(){
+      elLayoutBtn.textContent = `Layout Mode: ${state.layoutMode ? "On" : "Off"}`;
+      elSaveLayoutBtn.disabled = (state.circles.length === 0);
+    }
+
+    function buildLayoutJson(){
+      return {
+        circles: state.circles.map(n => ({id:n.id, x:n.x, y:n.y})),
+        edges: state.edges.map(e => ({id:e.id, a:e.a, b:e.b, rid:e.rid}))
+      };
+    }
+
+    function saveLayoutToLocalStorage(){
+      const layout = buildLayoutJson();
+      try{ localStorage.setItem(state.layoutKey, JSON.stringify(layout)); }catch{}
+      return layout;
+    }
+
+    function loadLayoutFromLocalStorage(){
+      try{
+        const raw = localStorage.getItem(state.layoutKey);
+        if(!raw) return false;
+        const parsed = JSON.parse(raw);
+        if(parsed?.circles?.length && parsed?.edges?.length){
+          state.circles = parsed.circles.map(n => ({...n}));
+          state.edges = parsed.edges.map(e => ({...e}));
+          return true;
+        }
+      }catch{}
+      return false;
+    }
+
+    function usedOddSet(excludeId){
+      const used = new Set();
+      for(const c of state.circles){
+        if(c.id === excludeId) continue;
+        const v = state.oddPlaced[c.id];
+        if(typeof v === "number") used.add(v);
+      }
+      return used;
+    }
+
+    function nextOddValueSkippingUsed(current, oddsList, excludeId){
+      const cycle = [null, ...oddsList];
+      const used = usedOddSet(excludeId);
+
+      let idx = cycle.indexOf(current);
+      idx = (idx < 0) ? 0 : idx;
+
+      for(let step=1; step<=cycle.length; step++){
+        const cand = cycle[(idx + step) % cycle.length];
+        if(cand === null) return null;
+        if(typeof cand === "number" && !used.has(cand)) return cand;
+      }
+      return current ?? null;
+    }
+
+    function computeTokenPositionForEdge(e, mid){
+      let px = mid.x;
+      let py = mid.y;
+
+      const applyForThisPuzzle = (state.puzzleId === "starfish");
+      if(!applyForThisPuzzle) return { x:px, y:py };
+
+      const a = circleById(e.a);
+      const b = circleById(e.b);
+      if(!a || !b) return { x:px, y:py };
+
+      const rect = elBoard.getBoundingClientRect();
+      const sx = rect.width / 1000;
+      const sy = rect.height / 1000;
+
+      const axp = a.x * sx, ayp = a.y * sy;
+      const bxp = b.x * sx, byp = b.y * sy;
+      const mxp = mid.x * sx, myp = mid.y * sy;
+
+      const dx = bxp - axp;
+      const dy = byp - ayp;
+      const len = Math.hypot(dx, dy) || 1;
+
+      const ux = dx / len;
+      const uy = dy / len;
+
+      const pxu = -uy;
+      const pyu = ux;
+
+      const nodeR = 84/2;
+      const tokR  = 78/2;
+
+      const minAllowed = nodeR + tokR - 6;
+      const distA = Math.hypot(mxp - axp, myp - ayp);
+      const distB = Math.hypot(mxp - bxp, myp - byp);
+      const overlapRisk = (distA < minAllowed) || (distB < minAllowed);
+
+      if(!overlapRisk) return { x:px, y:py };
+
+      const nudge = 54;
+      const cands = [
+        { x: mxp + pxu*nudge, y: myp + pyu*nudge },
+        { x: mxp - pxu*nudge, y: myp - pyu*nudge },
+      ];
+
+      function score(pt){
+        let best = Infinity;
+        for(const c of state.circles){
+          const cxp = c.x * sx, cyp = c.y * sy;
+          const d = Math.hypot(pt.x - cxp, pt.y - cyp);
+          if(d < best) best = d;
+        }
+        return best;
+      }
+
+      const s0 = score(cands[0]);
+      const s1 = score(cands[1]);
+      const best = (s1 > s0) ? cands[1] : cands[0];
+
+      return { x: Math.round(best.x / sx), y: Math.round(best.y / sy) };
+    }
+
+    function normPair(a,b){ return (a < b) ? `${a}|${b}` : `${b}|${a}`; }
+
+    function findEdgeIndexBetween(a,b){
+      const key = normPair(a,b);
+      return state.edges.findIndex(e => normPair(e.a, e.b) === key);
+    }
+
+    function normalizeEdges(){
+      state.edges = state.edges.map(e => ({ a:e.a, b:e.b }));
+      state.edges = state.edges.map((e, i) => ({
+        id: `e${i+1}`,
+        a: e.a,
+        b: e.b,
+        rid:`r${i+1}`
+      }));
+    }
+
+    function customGraphStats(){
+      const n = state.circles.length;
+      const m = state.edges.length;
+      const ids = state.circles.map(c => c.id);
+
+      const adj = new Map(ids.map(id => [id, []]));
+      for(const e of state.edges){
+        if(!adj.has(e.a)) adj.set(e.a, []);
+        if(!adj.has(e.b)) adj.set(e.b, []);
+        adj.get(e.a).push(e.b);
+        adj.get(e.b).push(e.a);
+      }
+
+      let connected = true;
+      if(n > 0){
+        const seen = new Set();
+        const stack = [ids[0]];
+        while(stack.length){
+          const cur = stack.pop();
+          if(seen.has(cur)) continue;
+          seen.add(cur);
+          for(const nx of (adj.get(cur) || [])){
+            if(!seen.has(nx)) stack.push(nx);
+          }
+        }
+        connected = (seen.size === n);
+      }
+
+      const parent = new Map();
+      function dfs(u, p){
+        parent.set(u, p);
+        for(const v of (adj.get(u) || [])){
+          if(v === p) continue;
+          if(parent.has(v)) return true;
+          if(dfs(v, u)) return true;
+        }
+        return false;
+      }
+      let hasCycle = false;
+      parent.clear();
+      if(n > 0){
+        hasCycle = dfs(ids[0], null);
+      }
+
+      return { n, m, connected, hasCycle };
+    }
+
+    function customEdgesValidForPlay(){
+      const { n, m, connected, hasCycle } = customGraphStats();
+      if(n < 2) return false;
+      if(m !== n - 1) return false;
+      if(!connected) return false;
+      if(hasCycle) return false;
+      return true;
+    }
+
+    function updateCustomCreateButton(){
+      if(state.puzzleId !== "custom") return;
+
+      if(state.builderStage === "ready"){
+        elCreatePuzzleBtn.disabled = false;
+        elCreatePuzzleBtn.textContent = "Create puzzle";
+        return;
+      }
+
+      if(state.builderStage === "connectEdges"){
+        const ok = customEdgesValidForPlay();
+        elCreatePuzzleBtn.disabled = !ok;
+        elCreatePuzzleBtn.textContent = ok ? "Create puzzle" : "Finish connections";
+        return;
+      }
+
+      elCreatePuzzleBtn.disabled = true;
+      elCreatePuzzleBtn.textContent = "Create puzzle";
+    }
+
+    function clearBoardOverlays(){
+      elBoard.querySelectorAll(".node, .midDrop, .midToken").forEach(el => el.remove());
+    }
+
+    function renderEdges(){
+      elSvg.innerHTML = "";
+
+      const rect = elBoard.getBoundingClientRect();
+      const sx = rect.width / 1000;
+      const sy = rect.height / 1000;
+
+      const nodeRadiusPx = 84/2;
+      const gapPx = 10;
+      const shrinkPx = nodeRadiusPx + gapPx;
+
+      for(const e of state.edges){
+        const a = circleById(e.a);
+        const b = circleById(e.b);
+        if(!a || !b) continue;
+
+        const dim = !(typeof state.oddPlaced[e.a] === "number" && typeof state.oddPlaced[e.b] === "number");
+
+        const axp = a.x * sx;
+        const ayp = a.y * sy;
+        const bxp = b.x * sx;
+        const byp = b.y * sy;
+
+        const dxp = bxp - axp;
+        const dyp = byp - ayp;
+        const lenp = Math.hypot(dxp, dyp) || 1;
+
+        const ux = dxp / lenp;
+        const uy = dyp / lenp;
+
+        const x1p = axp + ux * shrinkPx;
+        const y1p = ayp + uy * shrinkPx;
+        const x2p = bxp - ux * shrinkPx;
+        const y2p = byp - uy * shrinkPx;
+
+        const x1 = x1p / sx;
+        const y1 = y1p / sy;
+        const x2 = x2p / sx;
+        const y2 = y2p / sy;
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("class", "edge " + (dim ? "dim" : ""));
+        elSvg.appendChild(line);
+      }
+    }
+
+    function renderCircles(){
+      const odds = genOdds(state.circles.length);
+
+      const need = oddsValidUnique();
+      const dupOddIdsLive = (!need.ok && allOddsSet()) ? need.dupIds : new Set();
+      const dupOddIdsSubmit = (state.submitted) ? computeDuplicateOddCircleIds() : new Set();
+
+      const lockOdds = allOddsSet();
+
+      for(const n of state.circles){
+        const div = document.createElement("div");
+        div.className = "node" + (state.layoutMode ? " layout" : "");
+        div.dataset.id = n.id;
+        div.style.left = (n.x/10) + "%";
+        div.style.top  = (n.y/10) + "%";
+
+        const isBuilderConnect = (state.puzzleId === "custom" && state.mode === "builder" && state.builderStage === "connectEdges");
+        if(isBuilderConnect){
+          div.classList.add("empty");
+          if(state.builder.edgePickFromId === n.id) div.classList.add("pick");
+        } else {
+          const v = state.oddPlaced[n.id];
+          if(typeof v === "number"){
+            div.textContent = v;
+          } else {
+            div.classList.add("empty");
+          }
+        }
+
+        if(!state.layoutMode && !isBuilderConnect){
+          if(dupOddIdsLive.has(n.id)) div.classList.add("needChange");
+          if(dupOddIdsSubmit.has(n.id)) div.classList.add("dup");
+        }
+
+        if(!state.layoutMode && lockOdds && state.mode === "play"){
+          div.classList.add("swap");
+        }
+
+        div.addEventListener("click", () => {
+          if(isBuilderConnect){
+            const from = state.builder.edgePickFromId;
+            if(!from){
+              state.builder.edgePickFromId = n.id;
+              renderAll();
+              return;
+            }
+            if(from === n.id){
+              state.builder.edgePickFromId = null;
+              renderAll();
+              return;
+            }
+
+            const idx = findEdgeIndexBetween(from, n.id);
+            if(idx >= 0){
+              state.edges.splice(idx, 1);
+              normalizeEdges();
+            } else {
+              const { hasCycle } = (() => {
+                const tmp = state.edges.map(e => ({a:e.a, b:e.b}));
+                tmp.push({a:from, b:n.id});
+                const ids = state.circles.map(c=>c.id);
+                const adj = new Map(ids.map(id=>[id,[]]));
+                for(const e of tmp){
+                  adj.get(e.a).push(e.b);
+                  adj.get(e.b).push(e.a);
+                }
+                const parent = new Map();
+                function dfs(u,p){
+                  parent.set(u,p);
+                  for(const v of adj.get(u)){
+                    if(v===p) continue;
+                    if(parent.has(v)) return true;
+                    if(dfs(v,u)) return true;
+                  }
+                  return false;
+                }
+                parent.clear();
+                const cyc = ids.length ? dfs(ids[0], null) : false;
+                return { hasCycle: cyc };
+              })();
+
+              if(!hasCycle){
+                state.edges.push({ id:"", a:from, b:n.id, rid:"" });
+                normalizeEdges();
+              }
+            }
+
+            state.builder.edgePickFromId = null;
+            updateCustomCreateButton();
+            renderAll();
+            return;
+          }
+
+          if(state.layoutMode) return;
+          if(state.mode !== "play") return;
+          if(allOddsSet()) return;
+
+          const current = (typeof state.oddPlaced[n.id] === "number") ? state.oddPlaced[n.id] : null;
+          const next = nextOddValueSkippingUsed(current, odds, n.id);
+
+          state.oddPlaced[n.id] = next;
+
+          state.submitted = false;
+          hideWinOverlay(true);
+          state.reportedSolvedForAttempt = false;
+          for(const e of state.edges) state.evenPlaced[e.rid] = null;
+
+          renderAll();
+        });
+
+        div.addEventListener("pointerdown", (ev) => {
+          if(!state.layoutMode) return;
+          ev.preventDefault();
+          div.setPointerCapture(ev.pointerId);
+
+          const rect = elBoard.getBoundingClientRect();
+          const px = ev.clientX - rect.left;
+          const py = ev.clientY - rect.top;
+
+          const cx = (n.x/1000) * rect.width;
+          const cy = (n.y/1000) * rect.height;
+
+          state.dragging = { id: n.id, offsetX: cx - px, offsetY: cy - py };
+        });
+
+        div.addEventListener("pointermove", (ev) => {
+          if(!state.layoutMode) return;
+          if(!state.dragging || state.dragging.id !== n.id) return;
+
+          const rect = elBoard.getBoundingClientRect();
+          const px = ev.clientX - rect.left + state.dragging.offsetX;
+          const py = ev.clientY - rect.top  + state.dragging.offsetY;
+
+          n.x = clamp(Math.round((px / rect.width) * 1000), 0, 1000);
+          n.y = clamp(Math.round((py / rect.height) * 1000), 0, 1000);
+
+          renderAll();
+        });
+
+        div.addEventListener("pointerup", () => {
+          if(!state.layoutMode) return;
+          state.dragging = null;
+        });
+
+        div.addEventListener("pointerdown", (ev) => {
+          if(state.layoutMode) return;
+          if(state.mode !== "play") return;
+          if(!allOddsSet()) return;
+          if(ev.button !== undefined && ev.button !== 0) return;
+
+          ev.preventDefault();
+          div.setPointerCapture(ev.pointerId);
+
+          state.swapDrag = {
+            fromId: n.id,
+            startX: ev.clientX,
+            startY: ev.clientY,
+            active: false
+          };
+        });
+
+        div.addEventListener("pointermove", (ev) => {
+          if(!state.swapDrag) return;
+          if(state.layoutMode) return;
+          if(state.mode !== "play") return;
+          if(!allOddsSet()) return;
+
+          const dx = ev.clientX - state.swapDrag.startX;
+          const dy = ev.clientY - state.swapDrag.startY;
+          const dist = Math.hypot(dx, dy);
+
+          if(!state.swapDrag.active && dist > 6){
+            state.swapDrag.active = true;
+            div.classList.add("swapping");
+          }
+        });
+
+        div.addEventListener("pointerup", (ev) => {
+          if(!state.swapDrag) return;
+
+          const fromId = state.swapDrag.fromId;
+          const wasActive = state.swapDrag.active;
+          state.swapDrag = null;
+
+          div.classList.remove("swapping");
+          if(!wasActive) return;
+
+          const targetEl = document.elementFromPoint(ev.clientX, ev.clientY);
+          const nodeEl = targetEl ? targetEl.closest?.(".node") : null;
+          const toId = nodeEl?.dataset?.id || null;
+
+          if(!toId || toId === fromId) return;
+
+          const a = state.oddPlaced[fromId];
+          const b = state.oddPlaced[toId];
+          if(typeof a !== "number" || typeof b !== "number") return;
+
+          state.oddPlaced[fromId] = b;
+          state.oddPlaced[toId] = a;
+
+          state.submitted = false;
+          hideWinOverlay(true);
+          state.reportedSolvedForAttempt = false;
+          for(const e of state.edges) state.evenPlaced[e.rid] = null;
+
+          renderAll();
+        });
+
+        elBoard.appendChild(div);
+      }
+    }
+
+    function renderMidpoints(){
+      const dups = computeDuplicateEvenValues();
+      const ov = oddsValidUnique();
+      const allowMidpoints = ov.ok && !state.layoutMode;
+
+      for(const e of state.edges){
+        const a = circleById(e.a);
+        const b = circleById(e.b);
+        if(!a || !b) continue;
+
+        const p = midpoint(a,b);
+
+        const dz = document.createElement("div");
+        dz.className = "midDrop";
+        dz.dataset.rid = e.rid;
+        dz.style.left = (p.x/10) + "%";
+        dz.style.top  = (p.y/10) + "%";
+
+        dz.addEventListener("dragover", (ev) => {
+          if(state.mode !== "play") return;
+          if(!allowMidpoints) return;
+          ev.preventDefault();
+        });
+
+        dz.addEventListener("drop", (ev) => {
+          if(state.mode !== "play") return;
+          if(!allowMidpoints) return;
+          ev.preventDefault();
+
+          let payload = null;
+          try{ payload = JSON.parse(ev.dataTransfer.getData("text/plain") || "null"); }catch{}
+          if(!payload || payload.type !== "even") return;
+
+          state.evenPlaced[e.rid] = payload.num;
+          state.submitted = false;
+          hideWinOverlay(true);
+          state.reportedSolvedForAttempt = false;
+          renderAll();
+        });
+
+        dz.addEventListener("click", () => {
+          if(state.mode !== "play") return;
+          if(!allowMidpoints) return;
+          if(typeof state.evenPlaced[e.rid] !== "number") return;
+          state.evenPlaced[e.rid] = null;
+          state.submitted = false;
+          hideWinOverlay(true);
+          state.reportedSolvedForAttempt = false;
+          renderAll();
+        });
+
+        elBoard.appendChild(dz);
+
+        const placed = state.evenPlaced[e.rid];
+        if(typeof placed === "number"){
+          const tp = computeTokenPositionForEdge(e, p);
+
+          const tok = document.createElement("div");
+          tok.className = "midToken";
+          tok.style.left = (tp.x/10) + "%";
+          tok.style.top  = (tp.y/10) + "%";
+          tok.textContent = placed;
+
+          if(state.submitted){
+            const correct = correctDifferenceForRid(e.rid);
+            if(placed !== correct) tok.classList.add("bad");
+            if(dups.has(placed)) tok.classList.add("dup");
+          }
+
+          elBoard.appendChild(tok);
+        }
+      }
+    }
+
+    function renderBottomBar(){
+      const ov = oddsValidUnique();
+      if(!ov.ok || state.layoutMode){
+        elBottomBar.classList.remove("show");
+        elBottomBar.innerHTML = "";
+        return;
+      }
+
+      elBottomBar.classList.add("show");
+      elBottomBar.innerHTML = "";
+
+      const evens = genEvens(state.edges.length);
+
+      for(const num of evens){
+        const t = document.createElement("div");
+        t.className = "evenTok";
+        t.textContent = num;
+        t.draggable = true;
+
+        t.addEventListener("dragstart", (ev) => {
+          if(state.mode !== "play") { ev.preventDefault(); return; }
+          const ov2 = oddsValidUnique();
+          if(!ov2.ok) { ev.preventDefault(); return; }
+          if(state.layoutMode) { ev.preventDefault(); return; }
+
+          t.classList.add("dragging");
+          ev.dataTransfer.setData("text/plain", JSON.stringify({ type:"even", num }));
+        });
+        t.addEventListener("dragend", () => t.classList.remove("dragging"));
+
+        elBottomBar.appendChild(t);
+      }
+    }
+
+    function renderAll(){
+      clearBoardOverlays();
+      renderEdges();
+      renderCircles();
+      renderMidpoints();
+      renderBottomBar();
+      updateLayoutButtons();
+      updateCustomCreateButton();
+    }
+
+    function resetGame(){
+      hideWinOverlay(true);
+      state.submitted = false;
+      state.winShown = false;
+      state.startedAt = performance.now();
+      state.attempts += 1;
+      state.reportedSolvedForAttempt = false;
+
+      state.oddPlaced = Object.fromEntries(state.circles.map(n => [n.id, null]));
+      state.evenPlaced = Object.fromEntries(state.edges.map(e => [e.rid, null]));
+
+      state.swapDrag = null;
+      renderAll();
+
+      postPuzzleResult({ completed:false });
+    }
+
+    function submitPuzzle(){
+      state.submitted = true;
+      hideWinOverlay(true);
+      renderAll();
+
+      if(isSolved()){
+        showWinOverlay();
+      }
+    }
+
+    function applyLayoutFromDefaults(puzzleId){
+      const base = DEFAULT_LAYOUTS[puzzleId] || DEFAULT_LAYOUTS.dragonfly;
+      state.circles = base.circles.map(n => ({...n}));
+      state.edges = base.edges.map(e => ({...e}));
+    }
+
+    function enterCustomBuilderFresh(){
+      state.mode = "builder";
+      state.builderStage = "needsUpload";
+      state.builder.bgDataUrl = null;
+      state.builder.circleTargetCount = parseInt(elCircleCountSelect.value, 10) || 7;
+      state.builder.edgePickFromId = null;
+
+      state.circles = [];
+      state.edges = [];
+      state.oddPlaced = {};
+      state.evenPlaced = {};
+      state.submitted = false;
+
+      state.layoutMode = false;
+      state.dragging = null;
+      state.swapDrag = null;
+      elLayoutJson.classList.remove("show");
+
+      elBoard.classList.add("blank");
+      elBg.classList.add("hidden");
+      elBg.removeAttribute("src");
+
+      elCustomTools.classList.add("show");
+      elCreatePuzzleBtn.disabled = true;
+
+      updateCustomHint();
+      renderAll();
+    }
+
+    function exitBuilderToPlay(){
+      state.mode = "play";
+      state.builderStage = "off";
+      state.builder.edgePickFromId = null;
+      elCustomTools.classList.remove("show");
+
+      elBoard.classList.remove("blank");
+      elBg.classList.remove("hidden");
+
+      resetGame();
+    }
+
+    function updateCustomHint(){
+      if(state.puzzleId !== "custom") return;
+
+      if(state.builderStage === "needsUpload"){
+        elCustomHint.innerHTML = `Upload an image to begin.`;
+        return;
+      }
+      if(state.builderStage === "chooseCount"){
+        elCustomHint.innerHTML = `Choose how many circles you want, then click <strong>Set</strong>.`;
+        return;
+      }
+      if(state.builderStage === "placeCircles"){
+        const remaining = Math.max(0, state.builder.circleTargetCount - state.circles.length);
+        elCustomHint.innerHTML =
+          `Click on the image to place circles. Remaining: <strong>${remaining}</strong>.`;
+        return;
+      }
+      if(state.builderStage === "connectEdges"){
+        const { n, m, connected, hasCycle } = customGraphStats();
+        const need = Math.max(0, (n - 1) - m);
+        const status = [
+          `Edges: <strong>${m}</strong> / <strong>${Math.max(0,n-1)}</strong>`,
+          connected ? `Connected: <strong>Yes</strong>` : `Connected: <strong>No</strong>`,
+          hasCycle ? `<span style="color:rgba(251,191,36,0.98);font-weight:900;">Cycle detected</span>` : `No cycle`,
+        ].join(" • ");
+
+        elCustomHint.innerHTML =
+          `Now <strong>click two circles</strong> to add/remove a connection.<br>
+           Make a single connected shape with <strong>no closed loop</strong> (tree).<br>
+           ${status}<br>
+           ${need>0 ? `Add <strong>${need}</strong> more connection(s).` : `If everything looks good, click <strong>Create puzzle</strong>.`}`;
+        return;
+      }
+      if(state.builderStage === "ready"){
+        elCustomHint.innerHTML = `Ready. Click <strong>Create puzzle</strong> to activate gameplay.`;
+      }
+    }
+
+    function boardPointTo1000(ev){
+      const rect = elBoard.getBoundingClientRect();
+      const px = ev.clientX - rect.left;
+      const py = ev.clientY - rect.top;
+      const x = clamp(Math.round((px / rect.width) * 1000), 0, 1000);
+      const y = clamp(Math.round((py / rect.height) * 1000), 0, 1000);
+      return {x,y};
+    }
+
+    function setPuzzle(puzzleId){
+      state.puzzleId = puzzleId;
+      state.layoutKey = PUZZLES[puzzleId].layoutKey;
+
+      hideWinOverlay(true);
+      state.submitted = false;
+      state.layoutMode = false;
+      state.dragging = null;
+      state.swapDrag = null;
+      state.builder.edgePickFromId = null;
+      state.reportedSolvedForAttempt = false;
+      elLayoutJson.classList.remove("show");
+
+      if(puzzleId === "custom"){
+        document.title = "Animal Subtraction - Custom";
+        elPuzzleSelect.value = "custom";
+        enterCustomBuilderFresh();
+        return;
+      }
+
+      state.mode = "play";
+      state.builderStage = "off";
+      elCustomTools.classList.remove("show");
+
+      applyLayoutFromDefaults(puzzleId);
+
+      const cfg = PUZZLES[puzzleId];
+      document.title = `Animal Subtraction - ${cfg.name}`;
+      elBg.classList.remove("hidden");
+      elBoard.classList.remove("blank");
+
+      setBackgroundImage(cfg.img, cfg.name);
+
+      loadLayoutFromLocalStorage();
+      resetGame();
+    }
+
+    elHamburger.addEventListener("click", () => {
+      if(elSidePanel.classList.contains("open")) closeMenu();
+      else openMenu();
+    });
+    elScrim.addEventListener("click", closeMenu);
+
+    elPuzzleSelect.addEventListener("change", (e) => setPuzzle(e.target.value));
+
+    elSubmitBtn.addEventListener("click", submitPuzzle);
+    elResetBtn.addEventListener("click", resetGame);
+
+    elTryAgain.addEventListener("click", () => {
+      resetGame();
+      hideWinOverlay();
+    });
+    elTryAnother.addEventListener("click", () => {
+      hideWinOverlay(true);
+      openMenu();
+      elPuzzleSelect.focus();
+    });
+    elWinOverlay.addEventListener("click", (e) => {
+      if(e.target === elWinOverlay) hideWinOverlay();
+    });
+
+    elLayoutBtn.addEventListener("click", () => {
+      if(state.circles.length === 0) return;
+
+      state.layoutMode = !state.layoutMode;
+      state.submitted = false;
+      hideWinOverlay(true);
+
+      for(const e of state.edges) state.evenPlaced[e.rid] = null;
+      state.swapDrag = null;
+      state.reportedSolvedForAttempt = false;
+
+      renderAll();
+    });
+
+    elSaveLayoutBtn.addEventListener("click", async () => {
+      if(state.circles.length === 0) return;
+      const layout = saveLayoutToLocalStorage();
+      const json = JSON.stringify(layout, null, 2);
+
+      elLayoutJson.textContent = json;
+      elLayoutJson.classList.add("show");
+      try{ await navigator.clipboard.writeText(json); } catch {}
+      renderAll();
+    });
+
+    elCopyLayoutBtn.addEventListener("click", async () => {
+      if(state.circles.length === 0) return;
+      const json = JSON.stringify(buildLayoutJson(), null, 2);
+      elLayoutJson.textContent = json;
+      elLayoutJson.classList.add("show");
+      try{ await navigator.clipboard.writeText(json); } catch {}
+    });
+
+    elUploadBtn.addEventListener("click", () => elImgFile.click());
+
+    elImgFile.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        if(!dataUrl.startsWith("data:image/")) return;
+
+        state.builder.bgDataUrl = dataUrl;
+
+        elBg.classList.remove("hidden");
+        setBackgroundImage(dataUrl, "Custom image");
+        elBoard.classList.remove("blank");
+
+        state.builderStage = "chooseCount";
+        updateCustomHint();
+        updateCustomCreateButton();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    elSetCircleCountBtn.addEventListener("click", () => {
+      if(state.puzzleId !== "custom") return;
+      if(!state.builder.bgDataUrl){
+        state.builderStage = "needsUpload";
+        updateCustomHint();
+        return;
+      }
+
+      state.builder.circleTargetCount = parseInt(elCircleCountSelect.value, 10) || 7;
+      state.circles = [];
+      state.edges = [];
+      state.builder.edgePickFromId = null;
+
+      state.builderStage = "placeCircles";
+      elCreatePuzzleBtn.disabled = true;
+
+      state.layoutMode = false;
+      state.dragging = null;
+      state.swapDrag = null;
+
+      updateCustomHint();
+      updateCustomCreateButton();
+      renderAll();
+    });
+
+    elCreatePuzzleBtn.addEventListener("click", () => {
+      if(state.puzzleId !== "custom") return;
+      if(!state.builder.bgDataUrl) return;
+
+      if(state.builderStage === "connectEdges"){
+        if(!customEdgesValidForPlay()) return;
+        saveLayoutToLocalStorage();
+        exitBuilderToPlay();
+        return;
+      }
+
+      if(state.builderStage === "ready"){
+        saveLayoutToLocalStorage();
+        exitBuilderToPlay();
+        return;
+      }
+    });
+
+    elClearCustomBtn.addEventListener("click", () => {
+      if(state.puzzleId !== "custom") return;
+      enterCustomBuilderFresh();
+    });
+
+    elBoard.addEventListener("click", (ev) => {
+      if(state.puzzleId !== "custom") return;
+      if(state.mode !== "builder") return;
+      if(state.layoutMode) return;
+
+      if(state.builderStage !== "placeCircles") return;
+      if(state.circles.length >= state.builder.circleTargetCount) return;
+
+      const pt = boardPointTo1000(ev);
+      const id = `b${state.circles.length + 1}`;
+      state.circles.push({ id, x: pt.x, y: pt.y });
+
+      const remaining = state.builder.circleTargetCount - state.circles.length;
+
+      if(remaining <= 0){
+        state.builderStage = "connectEdges";
+        state.builder.edgePickFromId = null;
+        updateCustomHint();
+        updateCustomCreateButton();
+      } else {
+        updateCustomHint();
+      }
+
+      renderAll();
+    });
+
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if(!data || typeof data !== "object") return;
+      if(data.type !== "mathpickle:init") return;
+
+      const payload = data.payload || {};
+      state.hostContext.puzzleSlug = payload.puzzleSlug || "animal-subtraction";
+      state.hostContext.classroomId = payload.classroomId || null;
+      state.hostContext.assignmentId = payload.assignmentId || null;
+    });
+
+    (async function init(){
+      elPuzzleSelect.value = "dragonfly";
+
+      preloadAllPuzzleImages().catch(() => {});
+      await preloadSingleImage(PUZZLES.dragonfly.img).catch(() => {});
+
+      setPuzzle("dragonfly");
+      closeMenu();
+      updateLayoutButtons();
+      if(state.puzzleId === "custom") updateCustomHint();
+    })();
+  </script>
+</body>
+</html>

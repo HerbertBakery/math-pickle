@@ -1,0 +1,1889 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lazy Architect – Wall Puzzle (Classroom Explorer)</title>
+  <style>
+    :root{
+      --bg:#07101a;
+      --panel:#0d1824;
+      --panel2:#0b1420;
+      --text:#e8eef6;
+      --muted:#9fb0c3;
+      --line:#132233;
+      --accent:#68d391;
+      --danger:#f87171;
+      --warn:#fbbf24;
+      --good:#34d399;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      overflow:hidden;
+    }
+
+    .app{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      height:100vh;
+      width:100vw;
+      gap:0;
+    }
+
+    .sidebar{
+      width:0;
+      overflow:hidden;
+      background:linear-gradient(180deg, rgba(13,24,36,.98), rgba(8,16,27,.98));
+      border-right:1px solid rgba(255,255,255,.06);
+      transition:width .22s ease;
+      position:relative;
+      z-index:4;
+    }
+    .sidebar.open{
+      width:340px;
+    }
+    .sidebarInner{
+      width:340px;
+      height:100%;
+      padding:84px 14px 14px;
+      overflow:auto;
+    }
+
+    .toolbar{
+      position:fixed;
+      top:10px;
+      left:10px;
+      z-index:20;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:rgba(6,12,20,.82);
+      border:1px solid rgba(255,255,255,.09);
+      border-radius:16px;
+      padding:8px;
+      backdrop-filter: blur(6px);
+      box-shadow:0 8px 24px rgba(0,0,0,.25);
+    }
+
+    .iconBtn, .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius:10px;
+      cursor:pointer;
+      transition:.14s ease;
+      user-select:none;
+    }
+    .iconBtn{
+      width:36px;height:36px;
+      display:grid;place-items:center;
+      font-size:16px;
+    }
+    .btn{
+      padding:8px 12px;
+      font-size:13px;
+      line-height:1;
+      min-height:36px;
+    }
+    .btn:hover,.iconBtn:hover{ background:rgba(255,255,255,.08); }
+    .btn.primary{
+      background:rgba(104,211,145,.12);
+      border-color:rgba(104,211,145,.35);
+    }
+    .btn.primary:hover{ background:rgba(104,211,145,.18); }
+
+    h1{
+      margin:0 0 10px;
+      font-size:14px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      letter-spacing:.2px;
+    }
+    h2{
+      margin:14px 0 8px;
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    .small{ font-size:12px; color:var(--muted); line-height:1.35; }
+    .tiny{ font-size:11px; color:var(--muted); line-height:1.3; }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .stack{ display:grid; gap:8px; }
+
+    label{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin:4px 0 4px;
+    }
+    input, select{
+      width:100%;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:9px 10px;
+      font-size:13px;
+    }
+
+    .card{
+      background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:10px;
+    }
+
+    .divider{
+      height:1px;
+      background:rgba(255,255,255,.08);
+      margin:10px 0;
+    }
+
+    .canvasWrap{
+      position:relative;
+      height:100%;
+      width:100%;
+      background:radial-gradient(circle at 50% 30%, rgba(17,33,54,.20), transparent 60%), #07101a;
+      overflow:hidden;
+    }
+    canvas{
+      display:block;
+      width:100%;
+      height:100%;
+      background:transparent;
+      cursor:pointer;
+    }
+
+    .overlayInfo{
+      position:absolute;
+      left:14px;
+      bottom:14px;
+      z-index:3;
+      background:rgba(4,10,16,.55);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:10px 12px;
+      backdrop-filter: blur(5px);
+      max-width:min(560px, calc(100vw - 28px));
+      pointer-events:none;
+    }
+    .overlayInfo .line1{
+      font-size:16px;
+      font-weight:700;
+      letter-spacing:.2px;
+      margin-bottom:4px;
+    }
+    .overlayInfo .line2{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .scoreBanner{
+      position:absolute;
+      right:18px;
+      bottom:18px;
+      z-index:3;
+      font-size:20px;
+      color:rgba(232,238,246,.9);
+      text-shadow:0 2px 10px rgba(0,0,0,.35);
+      pointer-events:none;
+      text-align:right;
+      max-width:60vw;
+    }
+    .scoreBanner .muted{
+      font-size:13px;
+      color:rgba(159,176,195,.95);
+      margin-bottom:2px;
+    }
+
+    .flash{
+      position:absolute;
+      top:14px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:21;
+      min-width:260px;
+      max-width:80vw;
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(10,17,28,.88);
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+      font-size:14px;
+      text-align:center;
+    }
+    .flash.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+    .flash.bad{
+      border-color: rgba(248,113,113,.45);
+      background: rgba(67,21,26,.90);
+    }
+    .flash.good{
+      border-color: rgba(52,211,153,.45);
+      background: rgba(16,55,45,.90);
+    }
+    .flash.warn{
+      border-color: rgba(251,191,36,.45);
+      background: rgba(63,45,14,.90);
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:11px;
+      padding:1px 6px;
+      border-radius:7px;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+    }
+
+    .checkbox{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:12px;
+      color:var(--text);
+      margin-top:6px;
+    }
+    .checkbox input{ width:auto; }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    .collapsible {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height .2s ease, opacity .15s ease;
+    }
+    .collapsible.open {
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    .miniRule {
+      font-size: 15px;
+      line-height: 1.45;
+      color: #e8eef6;
+      font-weight: 600;
+      padding: 2px 0;
+    }
+
+    .subtleBtn {
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .subtleBtn:hover {
+      background: rgba(255,255,255,.06);
+    }
+
+    .completionScreen{
+      position:absolute;
+      inset:0;
+      z-index:15;
+      display:grid;
+      place-items:center;
+      padding:20px;
+      background:rgba(4,10,16,.58);
+      backdrop-filter: blur(4px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease;
+    }
+    .completionScreen.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .completionCard{
+      width:min(520px, 92vw);
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(14,24,36,.96), rgba(8,14,24,.96));
+      box-shadow:0 20px 50px rgba(0,0,0,.38);
+      padding:18px 18px 16px;
+      text-align:center;
+    }
+    .completionTitle{
+      font-size:28px;
+      font-weight:800;
+      margin-bottom:6px;
+      letter-spacing:.2px;
+    }
+    .completionSub{
+      font-size:14px;
+      color:var(--muted);
+      line-height:1.4;
+      margin-bottom:12px;
+    }
+    .completionWallCount{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:10px;
+    }
+    .completionBreakdown{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:14px;
+    }
+    .completionActions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 800px){
+      .sidebar.open{ width:min(90vw,340px); }
+      .sidebarInner{ width:min(90vw,340px); }
+      .scoreBanner{ font-size:16px; right:12px; bottom:12px; }
+      .overlayInfo{ padding:8px 10px; }
+      .overlayInfo .line1{ font-size:14px; }
+      .completionTitle{ font-size:24px; }
+      .completionWallCount{ font-size:16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar" id="topToolbar">
+    <button class="iconBtn" id="toggleSidebarBtn" title="Show / hide rules">🍀</button>
+    <button class="btn" id="undoBtn" title="Undo last wall change">Undo</button>
+    <button class="btn primary" id="resetBtn" title="Reset current puzzle">Reset</button>
+  </div>
+
+  <div class="flash" id="flash"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebarInner">
+        <h1><span style="font-size:16px;">🍀</span> Lazy Architect</h1>
+
+        <div class="card">
+          <div class="miniRule">
+            Your homes don’t have windows.<br>
+            They don’t have doors.<br>
+            You are a lazy architect.<br>
+            Use as few walls as possible.
+          </div>
+
+          <div class="divider"></div>
+
+          <button class="subtleBtn" id="toggleTeacherBtn" type="button">▸ Teacher panel</button>
+
+          <div id="teacherPanelWrap" class="collapsible" style="margin-top:8px;">
+            <div class="card stack" style="margin-top:4px;">
+              <div class="small">Optional controls for setup and classroom demos. Hide this panel during class if you want students to discover the rules.</div>
+
+              <div>
+                <label>Game mode</label>
+                <select id="modeSelect">
+                  <option value="sequential" selected>Sequential explorer (1,2,3,...)</option>
+                  <option value="classic">Classic targets (comma-separated)</option>
+                  <option value="energetic">Energetic architect (maximize walls with targets)</option>
+                </select>
+              </div>
+
+              <div id="classicControls" class="stack" style="display:none;">
+                <div>
+                  <label>Target room sizes (comma-separated)</label>
+                  <input id="sizes" value="1,2,3,4,5,6" />
+                </div>
+                <div class="row">
+                  <div>
+                    <label>Grid rows (classic)</label>
+                    <input id="rows" type="number" min="4" max="80" value="16" />
+                  </div>
+                  <div>
+                    <label>Grid cols (classic)</label>
+                    <input id="cols" type="number" min="4" max="80" value="18" />
+                  </div>
+                </div>
+                <div class="row">
+                  <button class="btn" id="applyClassicGridBtn">Apply classic grid</button>
+                  <button class="btn" id="randomBtn">Randomize a bit</button>
+                </div>
+              </div>
+
+              <div id="sequentialControls" class="stack">
+                <div class="row">
+                  <div>
+                    <label>Start at room size</label>
+                    <input id="seqStart" type="number" min="1" max="999" value="1" />
+                  </div>
+                  <div>
+                    <label>Stop after (optional)</label>
+                    <input id="seqGoal" type="number" min="0" max="999" value="0" />
+                  </div>
+                </div>
+                <div class="row">
+                  <button class="btn" id="seed1Btn">Seed center 1×1</button>
+                  <button class="btn" id="clearProgressBtn">Clear progress only</button>
+                </div>
+              </div>
+
+              <div>
+                <label>Colouring</label>
+                <select id="paletteMode">
+                  <option value="4">IBM-muted style (4 colours + fallback)</option>
+                  <option value="5" selected>IBM-muted style (5 colours)</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Count outer boundary walls?</label>
+                  <select id="countOuterSelect">
+                    <option value="no" selected>No (ignore)</option>
+                    <option value="yes">Yes (count)</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Lock progression</label>
+                  <select id="lockProgressSelect">
+                    <option value="yes" selected>Yes</option>
+                    <option value="no">No (live)</option>
+                  </select>
+                </div>
+              </div>
+
+              <label class="checkbox"><input id="showOuterBoundary" type="checkbox" /> Draw board boundary frame</label>
+              <label class="checkbox"><input id="showGridLines" type="checkbox" checked /> Show background grid</label>
+              <label class="checkbox"><input id="showRoomNumbers" type="checkbox" checked /> Show room numbers</label>
+              <label class="checkbox"><input id="showMatchedOnly" type="checkbox" /> Colour matched rooms only (classic mode)</label>
+              <label class="checkbox"><input id="autoFitToggle" type="checkbox" checked /> Auto-fit / zoom as build grows</label>
+              <label class="checkbox"><input id="soundToggle" type="checkbox" checked /> Beep on mistakes / success</label>
+
+              <div class="divider"></div>
+              <div class="tiny">
+                Keyboard: <span class="kbd">Ctrl/Cmd+Z</span> undo, <span class="kbd">Ctrl/Cmd+Y</span> redo, <span class="kbd">?</span> toggle rules.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="canvasWrap" id="canvasWrap">
+      <canvas id="c"></canvas>
+
+      <div class="overlayInfo" id="overlayInfo">
+        <div class="line1" id="overlayTitle">Lazy Architect</div>
+        <div class="line2" id="overlaySub">Build rooms in order: 1, 2, 3, ... — use as few walls as possible.</div>
+      </div>
+
+      <div class="scoreBanner" id="scoreBanner">
+        <div class="muted">Wall count</div>
+        <div id="scoreText">0 horizontal + 0 vertical = 0 walls</div>
+      </div>
+
+      <div class="completionScreen" id="completionScreen" aria-hidden="true">
+        <div class="completionCard">
+          <div class="completionTitle" id="completionTitle">🎉 You did it!</div>
+          <div class="completionSub" id="completionSub">You completed all target rooms.</div>
+          <div class="completionWallCount" id="completionWallCount">0 walls</div>
+          <div class="completionBreakdown" id="completionBreakdown">0 horizontal + 0 vertical</div>
+          <div class="completionActions">
+            <button class="btn primary" id="completionResetBtn" type="button">Play again</button>
+            <button class="btn" id="completionCloseBtn" type="button">Keep viewing</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const sidebar = document.getElementById('sidebar');
+  const canvasWrap = document.getElementById('canvasWrap');
+  const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const randomBtn = document.getElementById('randomBtn');
+  const flashEl = document.getElementById('flash');
+
+  const toggleTeacherBtn = document.getElementById('toggleTeacherBtn');
+  const teacherPanelWrap = document.getElementById('teacherPanelWrap');
+
+  const modeSelect = document.getElementById('modeSelect');
+  const classicControls = document.getElementById('classicControls');
+  const sequentialControls = document.getElementById('sequentialControls');
+  const applyClassicGridBtn = document.getElementById('applyClassicGridBtn');
+
+  const elSizes = document.getElementById('sizes');
+  const elRows = document.getElementById('rows');
+  const elCols = document.getElementById('cols');
+
+  const seqStartEl = document.getElementById('seqStart');
+  const seqGoalEl = document.getElementById('seqGoal');
+  const seed1Btn = document.getElementById('seed1Btn');
+  const clearProgressBtn = document.getElementById('clearProgressBtn');
+
+  const paletteModeEl = document.getElementById('paletteMode');
+  const countOuterSelect = document.getElementById('countOuterSelect');
+  const lockProgressSelect = document.getElementById('lockProgressSelect');
+  const showOuterBoundaryEl = document.getElementById('showOuterBoundary');
+  const showGridLinesEl = document.getElementById('showGridLines');
+  const showRoomNumbersEl = document.getElementById('showRoomNumbers');
+  const showMatchedOnlyEl = document.getElementById('showMatchedOnly');
+  const autoFitToggleEl = document.getElementById('autoFitToggle');
+  const soundToggleEl = document.getElementById('soundToggle');
+
+  const scoreText = document.getElementById('scoreText');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlaySub = document.getElementById('overlaySub');
+
+  const completionScreen = document.getElementById('completionScreen');
+  const completionTitle = document.getElementById('completionTitle');
+  const completionSub = document.getElementById('completionSub');
+  const completionWallCount = document.getElementById('completionWallCount');
+  const completionBreakdown = document.getElementById('completionBreakdown');
+  const completionResetBtn = document.getElementById('completionResetBtn');
+  const completionCloseBtn = document.getElementById('completionCloseBtn');
+
+  let R = 48, C = 48;
+  let verticalWalls = [];
+  let horizontalWalls = [];
+  let boundaryEnforced = true;
+
+  let view = { ox: 0, oy: 0, cell: 28, targetOx:0, targetOy:0, targetCell:28 };
+  let drawingRAF = 0;
+
+  let history = [];
+  let redo = [];
+
+  let sequential = {
+    completed: new Set(),
+    next: 1,
+    goal: 0,
+    wrongOrderFlashStamp: 0,
+    lastCelebrated: 0
+  };
+
+  let completion = {
+    active: false,
+    dismissed: false
+  };
+
+  let mode = 'sequential';
+  let countOuter = false;
+
+  const platformContext = {
+    puzzleSlug: "lazy-architect",
+    puzzleVariantSlug: null,
+    classroomId: null,
+    assignmentId: null
+  };
+
+  const runtimeStats = {
+    startedAt: Date.now(),
+    attempts: 1,
+    saveSentKey: null
+  };
+
+  const ibmMuted5 = [
+    "rgba(110, 152, 245, 0.34)",
+    "rgba(130, 108, 232, 0.34)",
+    "rgba(234, 47, 138, 0.30)",
+    "rgba(255, 115, 0, 0.30)",
+    "rgba(245, 181, 32, 0.30)"
+  ];
+  const ibmMuted4 = [
+    "rgba(110, 152, 245, 0.34)",
+    "rgba(130, 108, 232, 0.34)",
+    "rgba(255, 115, 0, 0.30)",
+    "rgba(245, 181, 32, 0.30)"
+  ];
+  const neutralFill = "rgba(179, 194, 214, 0.26)";
+
+  function activePalette() {
+    return paletteModeEl.value === '4' ? ibmMuted4 : ibmMuted5;
+  }
+
+  function parseTargets() {
+    const raw = (elSizes.value || "").trim();
+    if (!raw) return [];
+    return raw.split(',')
+      .map(s => Number(s.trim()))
+      .filter(n => Number.isFinite(n) && n > 0)
+      .map(n => Math.floor(n));
+  }
+
+  function clamp(n, lo, hi){
+    return Math.max(lo, Math.min(hi, n));
+  }
+
+  function resetAttemptClock(incrementAttempt = false) {
+    if (incrementAttempt) {
+      runtimeStats.attempts += 1;
+    }
+    runtimeStats.startedAt = Date.now();
+    runtimeStats.saveSentKey = null;
+  }
+
+  function currentElapsedMs() {
+    return Math.max(0, Date.now() - runtimeStats.startedAt);
+  }
+
+  function getCurrentMetricLabel() {
+    return mode === "energetic" ? "Walls" : "Walls";
+  }
+
+  function buildRangeLabelFromTargets(targets) {
+    if (!targets.length) return "custom";
+    const min = Math.min(...targets);
+    const max = Math.max(...targets);
+    const contiguous = min === 1 && targets.every((n, i) => n === i + 1);
+    if (contiguous) return `1-to-${max}`;
+    return targets.join("-");
+  }
+
+  function getCurrentVariantSlug() {
+    if (platformContext.puzzleVariantSlug) return platformContext.puzzleVariantSlug;
+
+    if (mode === "sequential") {
+      const goal = Math.max(0, Number(seqGoalEl.value) || 0);
+      return goal > 0 ? `sequential-1-to-${goal}` : "sequential";
+    }
+
+    const targets = parseTargets();
+    const range = buildRangeLabelFromTargets(targets);
+    return `${mode}-${range}`;
+  }
+
+  function sendPuzzleResult(payload) {
+    try {
+      window.parent.postMessage({
+        type: payload.completed ? "mathpickle:puzzleComplete" : "mathpickle:puzzleResult",
+        payload: {
+          puzzleSlug: platformContext.puzzleSlug,
+          puzzleVariantSlug: getCurrentVariantSlug(),
+          classroomId: platformContext.classroomId,
+          assignmentId: platformContext.assignmentId,
+          metricLabel: getCurrentMetricLabel(),
+          ...payload
+        }
+      }, "*");
+    } catch (err) {}
+  }
+
+  function announceCompletionIfNeeded(runs) {
+    const variantSlug = getCurrentVariantSlug();
+    const dedupeKey = `${variantSlug}|${runs.total}|${mode}|${runtimeStats.attempts}`;
+    if (runtimeStats.saveSentKey === dedupeKey) return;
+
+    runtimeStats.saveSentKey = dedupeKey;
+
+    sendPuzzleResult({
+      score: runs.total,
+      timeMs: currentElapsedMs(),
+      attempts: runtimeStats.attempts,
+      completed: true,
+      completionPct: 100
+    });
+  }
+
+  function applyVariantFromSlug(rawSlug) {
+    const slug = String(rawSlug || "").trim().toLowerCase();
+    if (!slug) return false;
+
+    platformContext.puzzleVariantSlug = slug;
+
+    if (slug === "sequential") {
+      mode = "sequential";
+      modeSelect.value = "sequential";
+      seqStartEl.value = "1";
+      seqGoalEl.value = "0";
+      classicControls.style.display = "none";
+      sequentialControls.style.display = "";
+      resetBoardForCurrentMode(false);
+      return true;
+    }
+
+    let m = slug.match(/^sequential-(\d+)-to-(\d+)$/);
+    if (m) {
+      mode = "sequential";
+      modeSelect.value = "sequential";
+      seqStartEl.value = String(Number(m[1]) || 1);
+      seqGoalEl.value = String(Number(m[2]) || 0);
+      classicControls.style.display = "none";
+      sequentialControls.style.display = "";
+      resetBoardForCurrentMode(false);
+      return true;
+    }
+
+    m = slug.match(/^(classic|energetic)-(\d+)-to-(\d+)$/);
+    if (m) {
+      const start = Math.max(1, Number(m[2]) || 1);
+      const end = Math.max(start, Number(m[3]) || start);
+      const values = [];
+      for (let i = start; i <= end; i++) values.push(i);
+
+      mode = m[1];
+      modeSelect.value = mode;
+      elSizes.value = values.join(",");
+      classicControls.style.display = "";
+      sequentialControls.style.display = "none";
+      resetBoardForCurrentMode(false);
+      return true;
+    }
+
+    m = slug.match(/^(classic|energetic)-(.+)$/);
+    if (m) {
+      const maybeValues = m[2]
+        .split("-")
+        .map(Number)
+        .filter(n => Number.isFinite(n) && n > 0);
+      if (maybeValues.length) {
+        mode = m[1];
+        modeSelect.value = mode;
+        elSizes.value = maybeValues.join(",");
+        classicControls.style.display = "";
+        sequentialControls.style.display = "none";
+        resetBoardForCurrentMode(false);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function readVariantFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const variant = params.get("variant") || params.get("puzzleVariantSlug");
+    if (variant) {
+      applyVariantFromSlug(variant);
+    }
+  }
+
+  function handlePlatformInitMessage(event) {
+    const data = event.data;
+    if (!data || typeof data !== "object") return;
+    if (data.type !== "mathpickle:init") return;
+
+    const payload = data.payload || {};
+
+    if (payload.puzzleSlug) platformContext.puzzleSlug = String(payload.puzzleSlug);
+    if (payload.classroomId) platformContext.classroomId = String(payload.classroomId);
+    if (payload.assignmentId) platformContext.assignmentId = String(payload.assignmentId);
+    if (payload.puzzleVariantSlug || payload.variantSlug || payload.variant) {
+      applyVariantFromSlug(payload.puzzleVariantSlug || payload.variantSlug || payload.variant);
+    }
+  }
+
+  function resetCompletionState() {
+    completion.active = false;
+    completion.dismissed = false;
+    completionScreen.classList.remove('show');
+    completionScreen.setAttribute('aria-hidden', 'true');
+  }
+
+  function showCompletionScreen(runs) {
+    const total = runs.total;
+    completion.active = true;
+    completion.dismissed = false;
+
+    if (mode === 'energetic') {
+      completionTitle.textContent = "🔥 You did it!";
+      completionSub.textContent = "All target rooms are complete (Energetic Architect).";
+    } else {
+      completionTitle.textContent = "🎉 You did it!";
+      completionSub.textContent = "All target rooms are complete (Classic mode).";
+    }
+
+    completionWallCount.textContent = `${total} wall${total === 1 ? '' : 's'}`;
+    completionBreakdown.textContent = `${runs.hRuns} horizontal + ${runs.vRuns} vertical = ${runs.total} walls`;
+
+    completionScreen.classList.add('show');
+    completionScreen.setAttribute('aria-hidden', 'false');
+    beep('good', 0.14);
+
+    announceCompletionIfNeeded(runs);
+  }
+
+  function dismissCompletionScreen() {
+    completion.dismissed = true;
+    completionScreen.classList.remove('show');
+    completionScreen.setAttribute('aria-hidden', 'true');
+  }
+
+  function isGameplayLocked() {
+    return completion.active && (mode === 'classic' || mode === 'energetic');
+  }
+
+  function shouldShowBoardFrame() {
+    return showOuterBoundaryEl.checked || mode === 'classic' || mode === 'energetic';
+  }
+
+  function initWalls(rows, cols) {
+    R = rows; C = cols;
+    verticalWalls = Array.from({length: R}, () => Array(C+1).fill(false));
+    horizontalWalls = Array.from({length: R+1}, () => Array(C).fill(false));
+
+    if (boundaryEnforced) {
+      for (let r = 0; r < R; r++) {
+        verticalWalls[r][0] = true;
+        verticalWalls[r][C] = true;
+      }
+      for (let c = 0; c < C; c++) {
+        horizontalWalls[0][c] = true;
+        horizontalWalls[R][c] = true;
+      }
+    }
+
+    history = [];
+    redo = [];
+  }
+
+  function clearInteriorWalls() {
+    for (let r = 0; r < R; r++) {
+      for (let c = 1; c < C; c++) verticalWalls[r][c] = false;
+    }
+    for (let r = 1; r < R; r++) {
+      for (let c = 0; c < C; c++) horizontalWalls[r][c] = false;
+    }
+  }
+
+  function resetSequentialProgress() {
+    sequential.completed.clear();
+    sequential.next = clamp(Number(seqStartEl.value) || 1, 1, 999);
+    sequential.goal = Math.max(0, Number(seqGoalEl.value) || 0);
+    sequential.lastCelebrated = sequential.next - 1;
+  }
+
+  function resetBoardForCurrentMode(incrementAttempt = true) {
+    if (incrementAttempt) resetAttemptClock(true);
+    else resetAttemptClock(false);
+
+    resetCompletionState();
+
+    if (mode === 'classic' || mode === 'energetic') {
+      const rr = clamp(Number(elRows.value)||16, 4, 80);
+      const cc = clamp(Number(elCols.value)||18, 4, 80);
+      initWalls(rr, cc);
+      clearInteriorWalls();
+    } else {
+      initWalls(48, 48);
+      clearInteriorWalls();
+      resetSequentialProgress();
+      seedCentralOneByOne(false);
+    }
+    fitView(true);
+    requestDraw();
+  }
+
+  function seedCentralOneByOne(pushHistory = true) {
+    const r = Math.floor(R/2), c = Math.floor(C/2);
+    const changes = [];
+
+    function setV(rr, cc, val){
+      if (rr < 0 || rr >= R || cc < 0 || cc > C) return;
+      const old = verticalWalls[rr][cc];
+      if (old === val) return;
+      verticalWalls[rr][cc] = val;
+      changes.push({kind:'v', r:rr, c:cc, from:old, to:val});
+    }
+    function setH(rr, cc, val){
+      if (rr < 0 || rr > R || cc < 0 || cc >= C) return;
+      const old = horizontalWalls[rr][cc];
+      if (old === val) return;
+      horizontalWalls[rr][cc] = val;
+      changes.push({kind:'h', r:rr, c:cc, from:old, to:val});
+    }
+
+    setV(r, c, true);
+    setV(r, c+1, true);
+    setH(r, c, true);
+    setH(r+1, c, true);
+
+    if (changes.length && pushHistory) {
+      history.push(changes);
+      redo = [];
+    }
+  }
+
+  function randomize() {
+    clearInteriorWalls();
+    const tries = Math.floor((R*C) * 0.16);
+    for (let i = 0; i < tries; i++) {
+      if (Math.random() < 0.5) {
+        const r = Math.floor(Math.random()*R);
+        const c = 1 + Math.floor(Math.random()*(C-1));
+        verticalWalls[r][c] = Math.random() < 0.28;
+      } else {
+        const r = 1 + Math.floor(Math.random()*(R-1));
+        const c = Math.floor(Math.random()*C);
+        horizontalWalls[r][c] = Math.random() < 0.28;
+      }
+    }
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    const nextW = Math.max(1, Math.floor(rect.width * dpr));
+    const nextH = Math.max(1, Math.floor(rect.height * dpr));
+
+    if (canvas.width !== nextW || canvas.height !== nextH) {
+      canvas.width = nextW;
+      canvas.height = nextH;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  let resizeObserver = null;
+  let sidebarTransitionTimer = null;
+
+  function forceCanvasResync() {
+    resizeCanvas();
+    if (autoFitToggleEl.checked) fitView(true);
+    requestDraw();
+  }
+
+  function hasWallBetween(r1,c1,r2,c2) {
+    if (r1 === r2 && c2 === c1+1) return verticalWalls[r1][c1+1];
+    if (r1 === r2 && c2 === c1-1) return verticalWalls[r1][c1];
+    if (c1 === c2 && r2 === r1+1) return horizontalWalls[r1+1][c1];
+    if (c1 === c2 && r2 === r1-1) return horizontalWalls[r1][c1];
+    return true;
+  }
+
+  function computeRooms() {
+    const seen = Array.from({length:R}, () => Array(C).fill(false));
+    const rooms = [];
+    const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+
+    for (let r = 0; r < R; r++) {
+      for (let c = 0; c < C; c++) {
+        if (seen[r][c]) continue;
+        const stack = [[r,c]];
+        seen[r][c] = true;
+        const cells = [];
+
+        while (stack.length) {
+          const [cr, cc] = stack.pop();
+          cells.push([cr, cc]);
+          for (const [dr, dc] of dirs) {
+            const nr = cr + dr, nc = cc + dc;
+            if (nr < 0 || nr >= R || nc < 0 || nc >= C) continue;
+            if (seen[nr][nc]) continue;
+            if (hasWallBetween(cr,cc,nr,nc)) continue;
+            seen[nr][nc] = true;
+            stack.push([nr,nc]);
+          }
+        }
+
+        let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+        for (const [rr,cc] of cells) {
+          if (rr < minR) minR = rr;
+          if (rr > maxR) maxR = rr;
+          if (cc < minC) minC = cc;
+          if (cc > maxC) maxC = cc;
+        }
+
+        rooms.push({
+          size: cells.length,
+          cells,
+          bbox: {minR,maxR,minC,maxC},
+          touchesBoundary: (minR===0 || minC===0 || maxR===R-1 || maxC===C-1)
+        });
+      }
+    }
+    return rooms;
+  }
+
+  function getRelevantRooms(rooms) {
+    if (mode === 'sequential') {
+      return rooms.filter(room => !room.touchesBoundary);
+    }
+    const limit = Math.floor(R*C*0.4);
+    return rooms.filter(room => room.size <= limit);
+  }
+
+  function buildAdjacency(rooms) {
+    const idxByCell = Array.from({length:R}, () => Array(C).fill(-1));
+    rooms.forEach((room, i) => {
+      for (const [r,c] of room.cells) idxByCell[r][c] = i;
+    });
+
+    const adj = Array.from({length:rooms.length}, () => new Set());
+
+    for (let r = 0; r < R; r++) {
+      for (let c = 0; c < C; c++) {
+        const a = idxByCell[r][c];
+        if (a < 0) continue;
+        if (c+1 < C) {
+          const b = idxByCell[r][c+1];
+          if (b >= 0 && b !== a && verticalWalls[r][c+1]) {
+            adj[a].add(b); adj[b].add(a);
+          }
+        }
+        if (r+1 < R) {
+          const b = idxByCell[r+1][c];
+          if (b >= 0 && b !== a && horizontalWalls[r+1][c]) {
+            adj[a].add(b); adj[b].add(a);
+          }
+        }
+      }
+    }
+    return adj;
+  }
+
+  function assignRegionColours(rooms) {
+    const palette = activePalette();
+    const adj = buildAdjacency(rooms);
+    const order = [...rooms.keys()].sort((a,b) => adj[b].size - adj[a].size || rooms[b].size - rooms[a].size);
+    const colorIndex = Array(rooms.length).fill(-1);
+
+    function canUse(node, ci) {
+      for (const nb of adj[node]) if (colorIndex[nb] === ci) return false;
+      return true;
+    }
+
+    function backtrack(k) {
+      if (k >= order.length) return true;
+      const node = order[k];
+      for (let ci = 0; ci < palette.length; ci++) {
+        if (!canUse(node, ci)) continue;
+        colorIndex[node] = ci;
+        if (backtrack(k+1)) return true;
+        colorIndex[node] = -1;
+      }
+      return false;
+    }
+
+    const ok = backtrack(0);
+    if (!ok) {
+      for (const node of order) {
+        let placed = false;
+        for (let ci = 0; ci < palette.length; ci++) {
+          if (canUse(node, ci)) { colorIndex[node] = ci; placed = true; break; }
+        }
+        if (!placed) colorIndex[node] = -1;
+      }
+    }
+    return colorIndex.map(ci => ci >= 0 ? palette[ci] : neutralFill);
+  }
+
+  function countWallRunsDetailed() {
+    let vRuns = 0, hRuns = 0;
+
+    for (let c = 0; c <= C; c++) {
+      const isOuter = (c === 0 || c === C);
+      if (isOuter && !countOuter) continue;
+      let inRun = false;
+      for (let r = 0; r < R; r++) {
+        const present = !!verticalWalls[r][c];
+        if (present && !inRun) { vRuns++; inRun = true; }
+        else if (!present && inRun) inRun = false;
+      }
+    }
+
+    for (let r = 0; r <= R; r++) {
+      const isOuter = (r === 0 || r === R);
+      if (isOuter && !countOuter) continue;
+      let inRun = false;
+      for (let c = 0; c < C; c++) {
+        const present = !!horizontalWalls[r][c];
+        if (present && !inRun) { hRuns++; inRun = true; }
+        else if (!present && inRun) inRun = false;
+      }
+    }
+
+    return { hRuns, vRuns, total: hRuns + vRuns };
+  }
+
+  function matchTargets(rooms, targets) {
+    const used = Array(rooms.length).fill(false);
+    const matched = [];
+    const sortedTargets = [...targets].sort((a,b)=>a-b);
+
+    for (const t of sortedTargets) {
+      let foundIdx = -1;
+      for (let i = 0; i < rooms.length; i++) {
+        if (used[i]) continue;
+        if (rooms[i].size === t) { foundIdx = i; break; }
+      }
+      if (foundIdx !== -1) {
+        used[foundIdx] = true;
+        matched.push({ roomIndex: foundIdx, size: t });
+      }
+    }
+
+    const foundCounts = new Map();
+    for (const m of matched) foundCounts.set(m.size, (foundCounts.get(m.size)||0) + 1);
+
+    const remainingCounts = new Map();
+    for (const t of targets) remainingCounts.set(t, (remainingCounts.get(t)||0) + 1);
+    for (const [k,v] of foundCounts.entries()) {
+      remainingCounts.set(k, remainingCounts.get(k) - v);
+      if (remainingCounts.get(k) <= 0) remainingCounts.delete(k);
+    }
+
+    return {
+      matched,
+      used,
+      foundCounts,
+      remainingCounts,
+      completed: targets.length > 0 && remainingCounts.size === 0
+    };
+  }
+
+  function currentSequentialFoundSizes(rooms) {
+    const counts = new Map();
+    for (const room of rooms) counts.set(room.size, (counts.get(room.size)||0)+1);
+    return counts;
+  }
+
+  function evaluateSequentialProgress(rooms) {
+    const counts = currentSequentialFoundSizes(rooms);
+
+    if (lockProgressSelect.value === 'yes') {
+      while (counts.has(sequential.next) && (sequential.goal === 0 || sequential.next <= sequential.goal)) {
+        sequential.completed.add(sequential.next);
+        if (sequential.next > sequential.lastCelebrated) {
+          sequential.lastCelebrated = sequential.next;
+          flash(`✅ Great! You made room ${sequential.next}.`, 'good', 1100);
+          beep('good');
+        }
+        sequential.next++;
+        if (sequential.goal > 0 && sequential.next > sequential.goal) break;
+      }
+    } else {
+      const start = clamp(Number(seqStartEl.value)||1, 1, 999);
+      let k = start;
+      while (counts.has(k)) k++;
+      sequential.next = k;
+      sequential.completed = new Set();
+      for (let i = start; i < k; i++) sequential.completed.add(i);
+    }
+
+    if (!counts.has(sequential.next)) {
+      let largerExists = false;
+      for (const sz of counts.keys()) if (sz > sequential.next) { largerExists = true; break; }
+      if (largerExists) {
+        const now = performance.now();
+        if (now - sequential.wrongOrderFlashStamp > 850) {
+          sequential.wrongOrderFlashStamp = now;
+          flash(`⚠️ Make room ${sequential.next} before bigger rooms.`, 'bad', 950);
+          beep('bad');
+        }
+      }
+    }
+    return { counts };
+  }
+
+  function labelAnchorForRoom(room) {
+    const set = new Set(room.cells.map(([r,c]) => `${r},${c}`));
+    const dist = new Map();
+    const q = [];
+
+    for (const [r,c] of room.cells) {
+      const neighbors = [[r+1,c],[r-1,c],[r,c+1],[r,c-1]];
+      let boundary = false;
+      for (const [nr,nc] of neighbors) {
+        if (!set.has(`${nr},${nc}`)) { boundary = true; break; }
+      }
+      if (boundary) {
+        const k = `${r},${c}`;
+        dist.set(k, 0);
+        q.push([r,c]);
+      }
+    }
+
+    let qi = 0;
+    while (qi < q.length) {
+      const [r,c] = q[qi++];
+      const d = dist.get(`${r},${c}`);
+      for (const [nr,nc] of [[r+1,c],[r-1,c],[r,c+1],[r,c-1]]) {
+        const key = `${nr},${nc}`;
+        if (!set.has(key)) continue;
+        if (dist.has(key)) continue;
+        dist.set(key, d + 1);
+        q.push([nr,nc]);
+      }
+    }
+
+    let cx = 0, cy = 0;
+    for (const [r,c] of room.cells) { cx += c + 0.5; cy += r + 0.5; }
+    cx /= room.cells.length;
+    cy /= room.cells.length;
+
+    let best = room.cells[0];
+    let bestScore = -Infinity;
+    for (const [r,c] of room.cells) {
+      const d = dist.get(`${r},${c}`) ?? 0;
+      const dx = (c + 0.5) - cx;
+      const dy = (r + 0.5) - cy;
+      const centroidPenalty = dx*dx + dy*dy;
+      const score = d * 100 - centroidPenalty;
+      if (score > bestScore) { bestScore = score; best = [r,c]; }
+    }
+    return { r: best[0], c: best[1] };
+  }
+
+  function getOccupiedContentBounds() {
+    let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
+    let found = false;
+
+    for (let r = 0; r < R; r++) {
+      for (let c = 0; c <= C; c++) {
+        if (!verticalWalls[r][c]) continue;
+        if (!shouldShowBoardFrame() && (c===0 || c===C)) continue;
+        found = true;
+        minGX = Math.min(minGX, c);
+        maxGX = Math.max(maxGX, c);
+        minGY = Math.min(minGY, r);
+        maxGY = Math.max(maxGY, r+1);
+      }
+    }
+    for (let r = 0; r <= R; r++) {
+      for (let c = 0; c < C; c++) {
+        if (!horizontalWalls[r][c]) continue;
+        if (!shouldShowBoardFrame() && (r===0 || r===R)) continue;
+        found = true;
+        minGX = Math.min(minGX, c);
+        maxGX = Math.max(maxGX, c+1);
+        minGY = Math.min(minGY, r);
+        maxGY = Math.max(maxGY, r);
+      }
+    }
+
+    if (!found) {
+      const cr = Math.floor(R/2), cc = Math.floor(C/2);
+      return { minC: cc-2, maxC: cc+2, minR: cr-2, maxR: cr+2 };
+    }
+
+    return {
+      minC: clamp(minGX - 2, 0, C),
+      maxC: clamp(maxGX + 2, 0, C),
+      minR: clamp(minGY - 2, 0, R),
+      maxR: clamp(maxGY + 2, 0, R)
+    };
+  }
+
+  function fitView(immediate = false) {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 4 || rect.height < 4) return;
+
+    const bounds = getOccupiedContentBounds();
+    const widthCells = Math.max(4, bounds.maxC - bounds.minC);
+    const heightCells = Math.max(4, bounds.maxR - bounds.minR);
+
+    const padPx = 44;
+    const cell = Math.max(10, Math.min(68, Math.floor(Math.min(
+      (rect.width - padPx*2) / widthCells,
+      (rect.height - padPx*2) / heightCells
+    ))));
+
+    const gridW = widthCells * cell;
+    const gridH = heightCells * cell;
+
+    const ox = Math.floor((rect.width - gridW)/2 - bounds.minC * cell);
+    const oy = Math.floor((rect.height - gridH)/2 - bounds.minR * cell);
+
+    view.targetCell = cell;
+    view.targetOx = ox;
+    view.targetOy = oy;
+
+    if (immediate || !Number.isFinite(view.cell) || view.cell === 0) {
+      view.cell = cell; view.ox = ox; view.oy = oy;
+    }
+  }
+
+  function gridToPixel(r, c) {
+    return { x: view.ox + c * view.cell, y: view.oy + r * view.cell };
+  }
+
+  function drawBackgroundGrid() {
+    if (!showGridLinesEl.checked) return;
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+    const cell = view.cell;
+    if (cell < 8) return;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 1;
+
+    if (mode === 'classic' || mode === 'energetic') {
+      const p0 = gridToPixel(0, 0);
+      const p1 = gridToPixel(R, C);
+
+      const left = Math.min(p0.x, p1.x);
+      const right = Math.max(p0.x, p1.x);
+      const top = Math.min(p0.y, p1.y);
+      const bottom = Math.max(p0.y, p1.y);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(left, top, right - left, bottom - top);
+      ctx.clip();
+
+      for (let c = 0; c <= C; c++) {
+        const x = view.ox + c * cell;
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.stroke();
+      }
+
+      for (let r = 0; r <= R; r++) {
+        const y = view.oy + r * cell;
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(right, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+      return;
+    }
+
+    const cStart = Math.max(0, Math.floor((-view.ox) / cell) - 1);
+    const cEnd = Math.min(C, Math.ceil((w - view.ox) / cell) + 1);
+    for (let c = cStart; c <= cEnd; c++) {
+      const x = view.ox + c * cell;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+
+    const rStart = Math.max(0, Math.floor((-view.oy) / cell) - 1);
+    const rEnd = Math.min(R, Math.ceil((h - view.oy) / cell) + 1);
+    for (let r = rStart; r <= rEnd; r++) {
+      const y = view.oy + r * cell;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+  }
+
+  function drawBoardBoundaryIfWanted() {
+    if (!shouldShowBoardFrame()) return;
+    const p0 = gridToPixel(0,0);
+    const p1 = gridToPixel(R,C);
+    ctx.strokeStyle = "rgba(231,238,247,0.88)";
+    ctx.lineWidth = Math.max(2, view.cell * 0.08);
+    ctx.strokeRect(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y);
+  }
+
+  function roomListToSizeText(rooms) {
+    if (!rooms.length) return "none";
+    const counts = new Map();
+    for (const r of rooms) counts.set(r.size, (counts.get(r.size)||0)+1);
+    return [...counts.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v]) => v===1 ? `${k}` : `${k}×${v}`).join(", ");
+  }
+
+  function updateOverlayAndScore(roomsRelevant, runs) {
+    scoreText.textContent = `${runs.hRuns} horizontal + ${runs.vRuns} vertical = ${runs.total} walls`;
+
+    countOuter = (countOuterSelect.value === 'yes');
+
+    if (mode === 'sequential') {
+      evaluateSequentialProgress(roomsRelevant);
+      const done = sequential.goal > 0 && sequential.next > sequential.goal;
+      overlayTitle.textContent = "Lazy Architect";
+      overlaySub.textContent = done
+        ? `✅ Sequence complete. ${scoreText.textContent}`
+        : `Build rooms in order. Next target: ${sequential.next}. Found now: ${roomListToSizeText(roomsRelevant)}`;
+
+      if (done) {
+        announceCompletionIfNeeded(runs);
+      }
+    } else {
+      overlayTitle.textContent = (mode === 'energetic') ? "Energetic Architect" : "Lazy Architect";
+      overlaySub.textContent = (mode === 'energetic')
+        ? `Make the target rooms, but maximize walls. Found now: ${roomListToSizeText(roomsRelevant)}`
+        : `Use as few walls as possible. Found now: ${roomListToSizeText(roomsRelevant)}`;
+    }
+  }
+
+  function draw() {
+    drawingRAF = 0;
+
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    if (w <= 0 || h <= 0) return;
+
+    ctx.clearRect(0,0,w,h);
+
+    if (autoFitToggleEl.checked) {
+      const changed =
+        Math.abs(view.targetCell - view.cell) > 0.1 ||
+        Math.abs(view.targetOx - view.ox) > 0.4 ||
+        Math.abs(view.targetOy - view.oy) > 0.4;
+
+      if (changed) {
+        view.cell += (view.targetCell - view.cell) * 0.18;
+        view.ox   += (view.targetOx - view.ox)     * 0.18;
+        view.oy   += (view.targetOy - view.oy)     * 0.18;
+      } else {
+        view.cell = view.targetCell;
+        view.ox = view.targetOx;
+        view.oy = view.targetOy;
+      }
+    }
+
+    ctx.fillStyle = "#07101a";
+    ctx.fillRect(0,0,w,h);
+
+    drawBackgroundGrid();
+
+    const allRooms = computeRooms();
+    const roomsRelevant = getRelevantRooms(allRooms);
+
+    const regionFills = assignRegionColours(roomsRelevant);
+
+    let matchedSet = null;
+    let classicMatch = null;
+    if (mode === 'classic' || mode === 'energetic') {
+      classicMatch = matchTargets(roomsRelevant, parseTargets());
+      matchedSet = new Set(classicMatch.matched.map(m => m.roomIndex));
+    }
+
+    for (let i = 0; i < roomsRelevant.length; i++) {
+      const room = roomsRelevant[i];
+      const shouldFill = (
+        mode === 'sequential' ||
+        !showMatchedOnlyEl.checked ||
+        (matchedSet && matchedSet.has(i))
+      );
+      if (!shouldFill) continue;
+
+      ctx.fillStyle = regionFills[i];
+      for (const [r,c] of room.cells) {
+        const p = gridToPixel(r,c);
+        const size = Math.max(0, view.cell - 2);
+        if (p.x + size < -4 || p.y + size < -4 || p.x > w + 4 || p.y > h + 4) continue;
+        ctx.fillRect(p.x + 1, p.y + 1, size, size);
+      }
+    }
+
+    drawBoardBoundaryIfWanted();
+
+    ctx.strokeStyle = "rgba(232,238,246,0.94)";
+    ctx.lineWidth = Math.max(2.2, view.cell * 0.10);
+    ctx.lineCap = "round";
+
+    for (let r = 0; r < R; r++) {
+      for (let c = 0; c <= C; c++) {
+        if (!verticalWalls[r][c]) continue;
+        if (!shouldShowBoardFrame() && (c === 0 || c === C)) continue;
+        const p1 = gridToPixel(r, c);
+        const p2 = gridToPixel(r+1, c);
+        if ((p1.x < -20 && p2.x < -20) || (p1.x > w + 20 && p2.x > w + 20)) continue;
+        if ((Math.max(p1.y,p2.y) < -20) || (Math.min(p1.y,p2.y) > h + 20)) continue;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+    }
+    for (let r = 0; r <= R; r++) {
+      for (let c = 0; c < C; c++) {
+        if (!horizontalWalls[r][c]) continue;
+        if (!shouldShowBoardFrame() && (r === 0 || r === R)) continue;
+        const p1 = gridToPixel(r, c);
+        const p2 = gridToPixel(r, c+1);
+        if ((p1.y < -20 && p2.y < -20) || (p1.y > h + 20 && p2.y > h + 20)) continue;
+        if ((Math.max(p1.x,p2.x) < -20) || (Math.min(p1.x,p2.x) > w + 20)) continue;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+    }
+
+    if (showRoomNumbersEl.checked && view.cell >= 12) {
+      for (let i = 0; i < roomsRelevant.length; i++) {
+        const room = roomsRelevant[i];
+        if (room.size > 9999) continue;
+        if ((mode === 'classic' || mode === 'energetic') && showMatchedOnlyEl.checked && matchedSet && !matchedSet.has(i)) continue;
+
+        const anchor = labelAnchorForRoom(room);
+        const p = gridToPixel(anchor.r, anchor.c);
+        const cx = p.x + view.cell/2;
+        const cy = p.y + view.cell/2;
+        if (cx < -40 || cy < -40 || cx > w + 40 || cy > h + 40) continue;
+
+        const fontPx = Math.max(12, Math.min(34, Math.floor(view.cell * (String(room.size).length >= 2 ? 0.52 : 0.62))));
+        ctx.font = `bold ${fontPx}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.lineWidth = Math.max(2.5, Math.floor(view.cell * 0.12));
+        ctx.strokeStyle = "rgba(5,10,17,0.80)";
+        ctx.strokeText(String(room.size), cx, cy);
+
+        ctx.fillStyle = "rgba(240,246,252,0.95)";
+        ctx.fillText(String(room.size), cx, cy);
+      }
+    }
+
+    const runs = countWallRunsDetailed();
+    updateOverlayAndScore(roomsRelevant, runs);
+
+    if ((mode === 'classic' || mode === 'energetic') && classicMatch && classicMatch.completed) {
+      if (!completion.active) {
+        showCompletionScreen(runs);
+      } else if (!completion.dismissed) {
+        completionWallCount.textContent = `${runs.total} wall${runs.total === 1 ? '' : 's'}`;
+        completionBreakdown.textContent = `${runs.hRuns} horizontal + ${runs.vRuns} vertical = ${runs.total} walls`;
+      }
+    } else {
+      if (completion.active) resetCompletionState();
+    }
+
+    if (autoFitToggleEl.checked) {
+      const stillMoving =
+        Math.abs(view.targetCell - view.cell) > 0.12 ||
+        Math.abs(view.targetOx - view.ox) > 0.45 ||
+        Math.abs(view.targetOy - view.oy) > 0.45;
+      if (stillMoving) requestDraw();
+    }
+  }
+
+  function requestDraw() {
+    if (drawingRAF) return;
+    drawingRAF = requestAnimationFrame(draw);
+  }
+
+  function toggleWallAt(px, py) {
+    if (isGameplayLocked()) {
+      flash("✅ Puzzle complete. Press Reset to play again.", "good", 900);
+      return;
+    }
+
+    const cell = view.cell;
+    if (!Number.isFinite(cell) || cell < 2) return;
+
+    const gx = (px - view.ox) / cell;
+    const gy = (py - view.oy) / cell;
+
+    const cLine = Math.round(gx);
+    const rLine = Math.round(gy);
+    const dx = Math.abs(gx - cLine);
+    const dy = Math.abs(gy - rLine);
+
+    const tol = Math.max(0.14, Math.min(0.28, 10 / Math.max(10, cell)));
+    const changes = [];
+
+    function pushChange(kind, r, c, from, to){
+      changes.push({kind, r, c, from, to});
+    }
+
+    if (dx < dy && dx <= tol) {
+      const c = cLine;
+      const r = Math.floor(gy);
+      if (r < 0 || r >= R || c < 0 || c > C) return;
+
+      const isOuter = (c === 0 || c === C);
+      if (isOuter && boundaryEnforced) { beep('bad', 0.05); return; }
+      const old = verticalWalls[r][c];
+      verticalWalls[r][c] = !old;
+      pushChange('v', r, c, old, !old);
+    } else if (dy <= tol) {
+      const r = rLine;
+      const c = Math.floor(gx);
+      if (r < 0 || r > R || c < 0 || c >= C) return;
+
+      const isOuter = (r === 0 || r === R);
+      if (isOuter && boundaryEnforced) { beep('bad', 0.05); return; }
+      const old = horizontalWalls[r][c];
+      horizontalWalls[r][c] = !old;
+      pushChange('h', r, c, old, !old);
+    } else {
+      return;
+    }
+
+    if (changes.length) {
+      history.push(changes);
+      redo = [];
+      if (autoFitToggleEl.checked) fitView(false);
+      requestDraw();
+    }
+  }
+
+  function applyChangeSet(changes, direction) {
+    for (const ch of changes) {
+      const value = (direction === 'undo') ? ch.from : ch.to;
+      if (ch.kind === 'v') verticalWalls[ch.r][ch.c] = value;
+      else horizontalWalls[ch.r][ch.c] = value;
+    }
+    if (autoFitToggleEl.checked) fitView(false);
+    requestDraw();
+  }
+
+  function doUndo() {
+    if (isGameplayLocked()) {
+      flash("✅ Puzzle complete. Press Reset to play again.", "good", 900);
+      return;
+    }
+    const changes = history.pop();
+    if (!changes) return;
+    redo.push(changes);
+    applyChangeSet(changes, 'undo');
+  }
+
+  function doRedo() {
+    if (isGameplayLocked()) {
+      flash("✅ Puzzle complete. Press Reset to play again.", "good", 900);
+      return;
+    }
+    const changes = redo.pop();
+    if (!changes) return;
+    history.push(changes);
+    applyChangeSet(changes, 'redo');
+  }
+
+  let audioCtx = null;
+  function beep(type='good', duration=0.09) {
+    if (!soundToggleEl.checked) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = (type === 'bad') ? 'square' : 'sine';
+      o.frequency.value = (type === 'bad') ? 190 : (type === 'warn' ? 330 : 520);
+      g.gain.value = 0.0001;
+      o.connect(g); g.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(type === 'bad' ? 0.03 : 0.025, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      o.start(now);
+      o.stop(now + duration + 0.01);
+    } catch (e) {}
+  }
+
+  let flashTimer = null;
+  function flash(msg, cls='warn', ms=900) {
+    flashEl.textContent = msg;
+    flashEl.className = `flash ${cls} show`;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { flashEl.className = 'flash'; }, ms);
+  }
+
+  toggleSidebarBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    setTimeout(forceCanvasResync, 0);
+    setTimeout(forceCanvasResync, 80);
+    setTimeout(forceCanvasResync, 180);
+    setTimeout(forceCanvasResync, 260);
+  });
+
+  undoBtn.addEventListener('click', doUndo);
+
+  resetBtn.addEventListener('click', () => {
+    resetBoardForCurrentMode(true);
+    flash("Board reset.", "warn", 700);
+  });
+
+  randomBtn.addEventListener('click', () => {
+    if (isGameplayLocked()) {
+      flash("✅ Puzzle complete. Press Reset to play again.", "good", 900);
+      return;
+    }
+    if (mode === 'sequential') {
+      flash("Randomize is for classic / energetic modes.", "warn", 900);
+      return;
+    }
+    resetAttemptClock(true);
+    const rr = clamp(Number(elRows.value)||16, 4, 80);
+    const cc = clamp(Number(elCols.value)||18, 4, 80);
+    resetCompletionState();
+    initWalls(rr, cc);
+    randomize();
+    fitView(true);
+    requestDraw();
+  });
+
+  toggleTeacherBtn.addEventListener('click', () => {
+    const open = teacherPanelWrap.classList.toggle('open');
+    toggleTeacherBtn.textContent = open ? '▾ Teacher panel' : '▸ Teacher panel';
+    setTimeout(forceCanvasResync, 0);
+  });
+
+  modeSelect.addEventListener('change', () => {
+    mode = modeSelect.value;
+    platformContext.puzzleVariantSlug = null;
+    resetCompletionState();
+
+    classicControls.style.display = (mode === 'classic' || mode === 'energetic') ? '' : 'none';
+    sequentialControls.style.display = (mode === 'sequential') ? '' : 'none';
+
+    if (mode === 'sequential') {
+      overlayTitle.textContent = "Lazy Architect";
+      overlaySub.textContent = "Build rooms in order: 1, 2, 3, ...";
+      resetBoardForCurrentMode(true);
+    } else {
+      overlayTitle.textContent = mode === 'energetic' ? "Energetic Architect" : "Lazy Architect";
+      overlaySub.textContent = mode === 'energetic'
+        ? "Make the target rooms, but try to maximize walls."
+        : "Make the target rooms using as few walls as possible.";
+      resetBoardForCurrentMode(true);
+    }
+  });
+
+  applyClassicGridBtn.addEventListener('click', () => {
+    if (!(mode === 'classic' || mode === 'energetic')) return;
+    resetBoardForCurrentMode(true);
+  });
+
+  [elSizes, elRows, elCols].forEach(el => el.addEventListener('change', () => {
+    if (mode === 'classic' || mode === 'energetic') {
+      resetCompletionState();
+      runtimeStats.saveSentKey = null;
+      requestDraw();
+    }
+  }));
+
+  [
+    paletteModeEl, countOuterSelect, lockProgressSelect, showOuterBoundaryEl,
+    showGridLinesEl, showRoomNumbersEl, showMatchedOnlyEl, autoFitToggleEl
+  ].forEach(el => {
+    el.addEventListener('change', () => {
+      countOuter = (countOuterSelect.value === 'yes');
+      if (autoFitToggleEl.checked) fitView(false);
+      requestDraw();
+    });
+  });
+
+  seed1Btn.addEventListener('click', () => {
+    if (isGameplayLocked()) {
+      flash("✅ Puzzle complete. Press Reset to play again.", "good", 900);
+      return;
+    }
+    if (mode !== 'sequential') {
+      flash("Seed is for sequential explorer mode.", "warn", 900);
+      return;
+    }
+    seedCentralOneByOne(true);
+    if (autoFitToggleEl.checked) fitView(false);
+    requestDraw();
+    flash("Seeded a central 1×1 room.", "good", 900);
+  });
+
+  clearProgressBtn.addEventListener('click', () => {
+    resetSequentialProgress();
+    runtimeStats.saveSentKey = null;
+    requestDraw();
+    flash("Sequence progress cleared.", "warn", 800);
+  });
+
+  seqStartEl.addEventListener('change', () => {
+    if (mode === 'sequential') {
+      resetSequentialProgress();
+      runtimeStats.saveSentKey = null;
+      requestDraw();
+    }
+  });
+
+  seqGoalEl.addEventListener('change', () => {
+    if (mode === 'sequential') {
+      sequential.goal = Math.max(0, Number(seqGoalEl.value)||0);
+      runtimeStats.saveSentKey = null;
+      requestDraw();
+    }
+  });
+
+  completionResetBtn.addEventListener('click', () => {
+    resetBoardForCurrentMode(true);
+    flash("Board reset.", "warn", 700);
+  });
+
+  completionCloseBtn.addEventListener('click', () => {
+    if (completion.active) dismissCompletionScreen();
+  });
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    toggleWallAt(e.clientX - rect.left, e.clientY - rect.top);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault(); doUndo();
+    } else if ((mod && e.key.toLowerCase() === 'y') || (mod && e.shiftKey && e.key.toLowerCase() === 'z')) {
+      e.preventDefault(); doRedo();
+    } else if (e.key === '?') {
+      sidebar.classList.toggle('open');
+      setTimeout(forceCanvasResync, 0);
+      setTimeout(forceCanvasResync, 120);
+      setTimeout(forceCanvasResync, 260);
+    } else if (e.key === 'Escape' && completion.active && !completion.dismissed) {
+      dismissCompletionScreen();
+    }
+  });
+
+  window.addEventListener('resize', forceCanvasResync);
+  window.addEventListener('message', handlePlatformInitMessage);
+
+  if ('ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(() => { forceCanvasResync(); });
+    resizeObserver.observe(canvasWrap);
+    resizeObserver.observe(canvas);
+  }
+
+  sidebar.addEventListener('transitionend', (e) => {
+    if (e.propertyName === 'width') {
+      clearTimeout(sidebarTransitionTimer);
+      sidebarTransitionTimer = setTimeout(() => forceCanvasResync(), 10);
+    }
+  });
+
+  countOuter = (countOuterSelect.value === 'yes');
+  mode = modeSelect.value;
+  resetSequentialProgress();
+  resetCompletionState();
+  initWalls(48, 48);
+  clearInteriorWalls();
+  seedCentralOneByOne(false);
+
+  sidebar.classList.remove('open');
+  teacherPanelWrap.classList.remove('open');
+  toggleTeacherBtn.textContent = '▸ Teacher panel';
+
+  classicControls.style.display = 'none';
+  sequentialControls.style.display = '';
+
+  resetAttemptClock(false);
+  resizeCanvas();
+  fitView(true);
+  readVariantFromUrl();
+  requestDraw();
+})();
+</script>
+</body>
+</html>

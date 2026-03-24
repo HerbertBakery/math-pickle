@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum PuzzleType {
+  PUZZLE
+  GAME
+  MINI_COMPETITION
+  UNSOLVED_PROBLEM
+  INTERACTIVE
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ClassroomMembershipRole {
+  STUDENT
+  ASSISTANT
+}
+
+enum PuzzleScoreDirection {
+  HIGHER_BETTER
+  LOWER_BETTER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String?
+  displayName   String?
+  role          UserRole @default(STUDENT)
+  countryCode   String?
+  stateProvince String?
+  city          String?
+  schoolId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  teacherClasses         Classroom[]
+  classroomMemberships   ClassroomMembership[]
+  assignmentsCreated     ClassroomAssignment[]     @relation("AssignmentCreator")
+  progress               StudentPuzzleProgress[]
+  puzzleLeaderboardRows  PuzzleLeaderboardEntry[]
+  overallLeaderboardRows OverallLeaderboardEntry[]
+
+  @@index([role])
+  @@index([schoolId])
+  @@index([countryCode])
+  @@index([stateProvince])
+}
+
+model School {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  countryCode   String?
+  stateProvince String?
+  city          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users      User[]
+  classrooms Classroom[]
+
+  puzzleLeaderboardEntries PuzzleLeaderboardEntry[]
+  overallLeaderboardEntry  OverallLeaderboardEntry?
+
+  @@unique([name, countryCode, stateProvince, city])
+  @@index([countryCode])
+  @@index([stateProvince])
+}
+
+model Classroom {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  joinCode      String   @unique
+  gradeLabel    String?
+  subjectLabel  String?
+  countryCode   String?
+  stateProvince String?
+  city          String?
+  schoolId      String?
+  teacherId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  school                 School?                   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  teacher                User                      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  memberships            ClassroomMembership[]
+  assignments            ClassroomAssignment[]
+  overallLeaderboardRows OverallLeaderboardEntry[]
+  progress               StudentPuzzleProgress[]
+  puzzleLeaderboardRows  PuzzleLeaderboardEntry[]
+
+  @@index([teacherId])
+  @@index([schoolId])
+  @@index([countryCode])
+  @@index([stateProvince])
+}
+
+model ClassroomMembership {
+  id          String                  @id @default(cuid())
+  classroomId String
+  userId      String
+  role        ClassroomMembershipRole @default(STUDENT)
+  joinedAt    DateTime                @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, userId])
+  @@index([userId])
+}
+
+model Puzzle {
+  id              String     @id @default(cuid())
+  title           String
+  slug            String     @unique
+  summary         String
+  content         String?
+  gradeBand       String?
+  subject         String?
+  standards       String?
+  featured        Boolean    @default(false)
+  type            PuzzleType @default(PUZZLE)
+  estimatedMins   Int?
+  sourceLegacyUrl String?
+  thumbnailUrl    String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  variants              PuzzleVariant[]
+  assignments           ClassroomAssignment[]
+  progress              StudentPuzzleProgress[]
+  puzzleLeaderboardRows PuzzleLeaderboardEntry[]
+
+  @@index([type])
+  @@index([featured])
+  @@index([gradeBand])
+  @@index([subject])
+}
+
+model PuzzleVariant {
+  id                   String               @id @default(cuid())
+  puzzleId             String
+  slug                 String
+  title                String
+  description          String?
+  isOfficial           Boolean              @default(true)
+  leaderboardEnabled   Boolean              @default(true)
+  scoreDirection       PuzzleScoreDirection @default(HIGHER_BETTER)
+  primaryMetricLabel   String               @default("Score")
+  secondaryMetricLabel String?
+  configJson           Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  puzzle             Puzzle                   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  assignments        ClassroomAssignment[]
+  progress           StudentPuzzleProgress[]
+  leaderboardEntries PuzzleLeaderboardEntry[]
+
+  @@unique([puzzleId, slug])
+  @@index([puzzleId])
+  @@index([isOfficial, leaderboardEnabled])
+}
+
+model ClassroomAssignment {
+  id              String           @id @default(cuid())
+  classroomId     String
+  puzzleId        String
+  puzzleVariantId String?
+  createdById     String
+  titleOverride   String?
+  instructions    String?
+  dueAt           DateTime?
+  status          AssignmentStatus @default(DRAFT)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  classroom     Classroom      @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  puzzle        Puzzle         @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  puzzleVariant PuzzleVariant? @relation(fields: [puzzleVariantId], references: [id], onDelete: SetNull)
+  createdBy     User           @relation("AssignmentCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([classroomId])
+  @@index([puzzleId])
+  @@index([puzzleVariantId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model StudentPuzzleProgress {
+  id                String    @id @default(cuid())
+  studentId         String
+  puzzleId          String
+  puzzleVariantId   String?
+  classroomId       String?
+  completionPct     Int       @default(0)
+  isCompleted       Boolean   @default(false)
+  attempts          Int       @default(0)
+  bestScore         Int?
+  bestTimeMs        Int?
+  totalPointsEarned Int       @default(0)
+  lastWorkedAt      DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  student       User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  puzzle        Puzzle         @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  puzzleVariant PuzzleVariant? @relation(fields: [puzzleVariantId], references: [id], onDelete: SetNull)
+  classroom     Classroom?     @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, puzzleId, puzzleVariantId])
+  @@index([studentId])
+  @@index([puzzleId])
+  @@index([puzzleVariantId])
+  @@index([classroomId])
+  @@index([isCompleted])
+  @@index([completedAt])
+}
+
+model PuzzleLeaderboardEntry {
+  id              String    @id @default(cuid())
+  puzzleId        String
+  puzzleVariantId String?
+  userId          String
+  classroomId     String?
+  schoolId        String?
+  countryCode     String?
+  stateProvince   String?
+  score           Int       @default(0)
+  timeMs          Int?
+  attempts        Int       @default(0)
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  puzzle        Puzzle         @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  puzzleVariant PuzzleVariant? @relation(fields: [puzzleVariantId], references: [id], onDelete: SetNull)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classroom     Classroom?     @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  school        School?        @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  @@unique([puzzleId, puzzleVariantId, userId])
+  @@index([puzzleId, score])
+  @@index([puzzleId, puzzleVariantId, score])
+  @@index([puzzleId, puzzleVariantId, classroomId, score])
+  @@index([puzzleId, puzzleVariantId, schoolId, score])
+  @@index([puzzleId, puzzleVariantId, countryCode, score])
+  @@index([puzzleId, puzzleVariantId, stateProvince, score])
+  @@index([completedAt])
+}
+
+model OverallLeaderboardEntry {
+  id             String   @id @default(cuid())
+  userId         String?  @unique
+  classroomId    String?  @unique
+  schoolId       String?  @unique
+  countryCode    String?
+  stateProvince  String?
+  totalPoints    Int      @default(0)
+  totalCompleted Int      @default(0)
+  totalAttempts  Int      @default(0)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classroom Classroom? @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  school    School?    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([countryCode, totalPoints])
+  @@index([stateProvince, totalPoints])
+  @@index([totalPoints])
+}
