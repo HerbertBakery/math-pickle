@@ -180,6 +180,12 @@ export default async function LeaderboardsPage({
     }))
   }));
 
+  const variantOptions =
+    selectedPuzzle?.variants.map((variant) => ({
+      slug: variant.slug,
+      title: variant.title
+    })) ?? [];
+
   return (
     <main className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
       <section className="rounded-[2rem] border border-line bg-gradient-to-b from-pickle-50 to-white p-8 shadow-soft">
@@ -192,13 +198,15 @@ export default async function LeaderboardsPage({
         </h1>
 
         <p className="mt-4 max-w-3xl text-lg leading-8 text-muted">
-          Pick a puzzle, choose the exact board or mode, then view rankings by individual or classroom across classroom, school, state or province, country, or global results.
+          Pick a puzzle, choose the exact board or mode, then view rankings by individual or
+          classroom across classroom, school, state or province, country, or global results.
         </p>
 
         <LeaderboardFilters
-          puzzles={puzzleOptions}
-          selectedPuzzleSlug={selectedPuzzle?.slug || ""}
-          selectedVariantSlug={selectedVariant?.slug || ""}
+          puzzleOptions={puzzleOptions}
+          variantOptions={variantOptions}
+          selectedPuzzle={selectedPuzzle?.slug || ""}
+          selectedVariant={selectedVariant?.slug || ""}
           selectedScope={selectedScope}
           selectedType={selectedType}
         />
@@ -220,7 +228,9 @@ export default async function LeaderboardsPage({
 
           <div className="rounded-2xl border border-line bg-white p-5 shadow-soft">
             <div className="text-sm font-medium text-muted">Scope</div>
-            <div className="mt-2 text-xl font-semibold text-ink">{getScopeLabel(selectedScope)}</div>
+            <div className="mt-2 text-xl font-semibold text-ink">
+              {getScopeLabel(selectedScope)}
+            </div>
           </div>
 
           <div className="rounded-2xl border border-line bg-white p-5 shadow-soft">
@@ -258,7 +268,9 @@ export default async function LeaderboardsPage({
             </div>
 
             {individualRows.length === 0 ? (
-              <div className="p-6 text-sm text-muted">No leaderboard data yet for this selection.</div>
+              <div className="p-6 text-sm text-muted">
+                No leaderboard data yet for this selection.
+              </div>
             ) : (
               individualRows.map((row, index) => (
                 <div
@@ -327,7 +339,9 @@ export default async function LeaderboardsPage({
             </div>
 
             {rankedClassrooms.length === 0 ? (
-              <div className="p-6 text-sm text-muted">No classroom leaderboard data yet for this selection.</div>
+              <div className="p-6 text-sm text-muted">
+                No classroom leaderboard data yet for this selection.
+              </div>
             ) : (
               rankedClassrooms.map((row, index) => (
                 <div
@@ -372,7 +386,8 @@ export default async function LeaderboardsPage({
             <h2 className="text-xl font-semibold text-ink">Regional ranking</h2>
           </div>
           <p className="text-sm leading-7 text-muted">
-            State and province views become more meaningful as more schools join the same official puzzle variants.
+            State and province views become more meaningful as more schools join the same official
+            puzzle variants.
           </p>
         </div>
 
@@ -382,7 +397,8 @@ export default async function LeaderboardsPage({
             <h2 className="text-xl font-semibold text-ink">Global standings</h2>
           </div>
           <p className="text-sm leading-7 text-muted">
-            Global rankings should compare only standardized official boards and modes, not classroom-only custom versions.
+            Global rankings should compare only standardized official boards and modes, not
+            classroom-only custom versions.
           </p>
         </div>
       </section>
@@ -397,7 +413,10 @@ export default async function LeaderboardsPage({
             "Live ranking refresh from saved puzzle results",
             "A full 100-puzzle competitive ecosystem"
           ].map((item) => (
-            <div key={item} className="rounded-2xl border border-line bg-canvas p-4 text-sm text-ink">
+            <div
+              key={item}
+              className="rounded-2xl border border-line bg-canvas p-4 text-sm text-ink"
+            >
               {item}
             </div>
           ))}

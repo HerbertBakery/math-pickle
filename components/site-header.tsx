@@ -1,31 +1,59 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { auth } from "@/auth";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const nav = [
+const publicNav: Array<{ href: Route; label: string }> = [
   { href: "/puzzles", label: "Puzzles" },
-  { href: "/leaderboards", label: "Leaderboards" }
+  { href: "/leaderboards", label: "Leaderboards" },
+  { href: "/teacher-signup", label: "Teachers" },
+  { href: "/student-signup", label: "Students" }
 ];
 
-function getDashboardHref(role?: "ADMIN" | "TEACHER" | "STUDENT") {
-  if (role === "TEACHER" || role === "ADMIN") return "/dashboard/teacher";
-  if (role === "STUDENT") return "/dashboard/student";
-  return "/login";
-}
+const teacherNav: Array<{ href: Route; label: string }> = [
+  { href: "/puzzles", label: "Puzzles" },
+  { href: "/leaderboards", label: "Leaderboards" },
+  { href: "/dashboard/teacher", label: "Dashboard" }
+];
 
-function getRoleLabel(role?: "ADMIN" | "TEACHER" | "STUDENT") {
-  if (role === "TEACHER") return "Teacher";
-  if (role === "STUDENT") return "Student";
-  if (role === "ADMIN") return "Admin";
-  return "";
-}
+const studentNav: Array<{ href: Route; label: string }> = [
+  { href: "/puzzles", label: "Puzzles" },
+  { href: "/leaderboards", label: "Leaderboards" },
+  { href: "/dashboard/student", label: "Dashboard" }
+];
 
 export async function SiteHeader() {
   const session = await auth();
-  const user = session?.user;
-  const dashboardHref = getDashboardHref(user?.role);
-  const roleLabel = getRoleLabel(user?.role);
+  const role = session?.user?.role ?? null;
+
+  const nav =
+    role === "TEACHER" || role === "ADMIN"
+      ? teacherNav
+      : role === "STUDENT"
+        ? studentNav
+        : publicNav;
+
+  const dashboardHref: Route =
+    role === "TEACHER" || role === "ADMIN"
+      ? "/dashboard/teacher"
+      : role === "STUDENT"
+        ? "/dashboard/student"
+        : "/login";
+
+  const dashboardLabel =
+    role === "TEACHER" || role === "ADMIN"
+      ? "Teacher dashboard"
+      : role === "STUDENT"
+        ? "Student dashboard"
+        : "Log in";
+
+  const statusText =
+    role === "TEACHER" || role === "ADMIN"
+      ? "Logged in as teacher"
+      : role === "STUDENT"
+        ? "Logged in as student"
+        : "Classroom puzzle platform";
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-background/95 backdrop-blur-xl dark:border-white/10 dark:bg-[#121826]/96">
@@ -36,11 +64,11 @@ export async function SiteHeader() {
           </div>
 
           <div>
-            <div className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[#4d5967] transition hover:text-ink dark:text-[#F2F4F8] dark:hover:text-white">
+            <div className="text-[1.15rem] font-semibold tracking-[-0.02em] text-[#556170] transition hover:text-ink dark:text-[#E6EAF0] dark:hover:text-white">
               MathPickle
             </div>
-            <div className="text-[0.8rem] font-medium text-[#7b8794] dark:text-[#B8C1CD]">
-              puzzles for real classrooms
+            <div className="text-[0.78rem] font-medium text-[#7a8795] dark:text-[#C7CFDA]">
+              {statusText}
             </div>
           </div>
         </Link>
@@ -57,46 +85,20 @@ export async function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3 lg:gap-4">
-          {user ? (
-            <>
-              <div className="hidden items-center gap-3 rounded-full border border-line bg-white/90 px-3 py-2 shadow-soft dark:border-white/10 dark:bg-white/5 md:flex">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pickle-600 text-sm font-bold text-white">
-                  {(user.name || user.email || "U").charAt(0).toUpperCase()}
-                </div>
-                <div className="leading-tight">
-                  <div className="text-sm font-semibold text-ink dark:text-white">
-                    {user.name || user.email}
-                  </div>
-                  <div className="text-xs font-medium text-muted dark:text-slate-300">
-                    {roleLabel} account active
-                  </div>
-                </div>
-              </div>
+        <div className="flex items-center gap-4">
+          <Link
+            href={dashboardHref}
+            className="hidden text-[0.95rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-ink lg:inline-flex dark:text-[#E6EAF0] dark:hover:text-white"
+          >
+            {dashboardLabel}
+          </Link>
 
-              <ButtonLink href={dashboardHref}>
-                {user.role === "STUDENT" ? "Student Dashboard" : "Teacher Dashboard"}
-              </ButtonLink>
-            </>
+          {role ? (
+            <ButtonLink href={dashboardHref}>
+              {role === "STUDENT" ? "Student" : "Teacher"}
+            </ButtonLink>
           ) : (
-            <>
-              <div className="hidden items-center gap-6 lg:flex">
-                <Link
-                  href="/teacher-signup"
-                  className="text-[0.98rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-ink dark:text-[#E6EAF0] dark:hover:text-white"
-                >
-                  Teachers
-                </Link>
-                <Link
-                  href="/student-signup"
-                  className="text-[0.98rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-ink dark:text-[#E6EAF0] dark:hover:text-white"
-                >
-                  Students
-                </Link>
-              </div>
-
-              <ButtonLink href="/teacher-signup">Teacher</ButtonLink>
-            </>
+            <ButtonLink href="/teacher-signup">Teacher</ButtonLink>
           )}
 
           <ThemeToggle />

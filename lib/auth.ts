@@ -51,7 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.displayName || `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`,
           role: user.role,
-          schoolId: user.schoolId ?? undefined
+          schoolId: user.schoolId ?? null
         };
       }
     })
@@ -61,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
-        token.schoolId = (user as { schoolId?: string }).schoolId;
+        token.schoolId = (user as { schoolId?: string | null }).schoolId ?? null;
       }
       return token;
     },
@@ -69,7 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "ADMIN" | "TEACHER" | "STUDENT";
-        session.user.schoolId = (token.schoolId as string | undefined) ?? null;
+        session.user.schoolId = (token.schoolId as string | null) ?? null;
       }
       return session;
     }

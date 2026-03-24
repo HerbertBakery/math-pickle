@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { cn } from "@/lib/utils";
 
 export function ButtonLink({
@@ -6,7 +7,7 @@ export function ButtonLink({
   children,
   variant = "primary"
 }: {
-  href: string;
+  href: Route;
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "ghost";
 }) {
@@ -15,8 +16,7 @@ export function ButtonLink({
       href={href}
       className={cn(
         "inline-flex items-center justify-center rounded-full px-5 py-3 text-[0.96rem] font-semibold tracking-[-0.01em] transition",
-        variant === "primary" &&
-          "bg-pickle-600 text-white hover:bg-pickle-700",
+        variant === "primary" && "bg-pickle-600 text-white hover:bg-pickle-700",
         variant === "secondary" &&
           "border border-line bg-white text-ink hover:bg-background dark:bg-[#1a1f29] dark:text-[#E0E0E0] dark:hover:bg-[#222938]",
         variant === "ghost" &&

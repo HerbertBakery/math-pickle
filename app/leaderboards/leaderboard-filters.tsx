@@ -1,150 +1,150 @@
 "use client";
 
-import { useMemo } from "react";
+import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-type VariantOption = {
-  slug: string;
-  title: string;
-};
-
-type PuzzleOption = {
-  slug: string;
-  title: string;
-  variants: VariantOption[];
+type LeaderboardFiltersProps = {
+  puzzleOptions: Array<{ slug: string; title: string }>;
+  variantOptions: Array<{ slug: string; title: string }>;
+  selectedPuzzle: string;
+  selectedVariant: string;
+  selectedScope: string;
+  selectedType: string;
 };
 
 export function LeaderboardFilters({
-  puzzles,
-  selectedPuzzleSlug,
-  selectedVariantSlug,
+  puzzleOptions,
+  variantOptions,
+  selectedPuzzle,
+  selectedVariant,
   selectedScope,
   selectedType
-}: {
-  puzzles: PuzzleOption[];
-  selectedPuzzleSlug: string;
-  selectedVariantSlug: string;
-  selectedScope: string;
-  selectedType: string;
-}) {
+}: LeaderboardFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const selectedPuzzle =
-    puzzles.find((puzzle) => puzzle.slug === selectedPuzzleSlug) ?? puzzles[0] ?? null;
+  function updateParams(next: {
+    puzzle?: string;
+    variant?: string;
+    scope?: string;
+    type?: string;
+  }) {
+    const params = new URLSearchParams(searchParams.toString());
 
-  const variants = selectedPuzzle?.variants ?? [];
+    if (next.puzzle !== undefined) {
+      if (next.puzzle) params.set("puzzle", next.puzzle);
+      else params.delete("puzzle");
+    }
 
-  const selectedVariant =
-    variants.find((variant) => variant.slug === selectedVariantSlug) ?? variants[0] ?? null;
+    if (next.variant !== undefined) {
+      if (next.variant) params.set("variant", next.variant);
+      else params.delete("variant");
+    }
 
-  const currentParams = useMemo(
-    () => new URLSearchParams(searchParams?.toString() || ""),
-    [searchParams]
-  );
+    if (next.scope !== undefined) {
+      if (next.scope) params.set("scope", next.scope);
+      else params.delete("scope");
+    }
 
-  function pushParams(next: Record<string, string>) {
-    const params = new URLSearchParams(currentParams.toString());
+    if (next.type !== undefined) {
+      if (next.type) params.set("type", next.type);
+      else params.delete("type");
+    }
 
-    Object.entries(next).forEach(([key, value]) => {
-      params.set(key, value);
-    });
+    const query = params.toString();
+    const href = (query ? `${pathname}?${query}` : pathname) as Route;
 
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(href);
   }
 
   return (
-    <section className="mt-8 rounded-[2rem] border border-line bg-white p-6 shadow-soft">
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <label htmlFor="leaderboard-puzzle" className="mb-2 block text-sm font-semibold text-ink">
-            Puzzle
-          </label>
-          <select
-            id="leaderboard-puzzle"
-            value={selectedPuzzle?.slug || ""}
-            onChange={(event) => {
-              const nextPuzzle = puzzles.find((puzzle) => puzzle.slug === event.target.value);
-              const nextVariant = nextPuzzle?.variants[0]?.slug || "";
-              pushParams({
-                puzzle: event.target.value,
-                variant: nextVariant
-              });
-            }}
-            className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
-          >
-            {puzzles.map((puzzle) => (
-              <option key={puzzle.slug} value={puzzle.slug}>
-                {puzzle.title}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="leaderboard-variant" className="mb-2 block text-sm font-semibold text-ink">
-            Mode / board
-          </label>
-          <select
-            id="leaderboard-variant"
-            value={selectedVariant?.slug || ""}
-            onChange={(event) => {
-              pushParams({
-                variant: event.target.value
-              });
-            }}
-            className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
-          >
-            {variants.map((variant) => (
-              <option key={variant.slug} value={variant.slug}>
-                {variant.title}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="leaderboard-scope" className="mb-2 block text-sm font-semibold text-ink">
-            Scope
-          </label>
-          <select
-            id="leaderboard-scope"
-            value={selectedScope}
-            onChange={(event) => {
-              pushParams({
-                scope: event.target.value
-              });
-            }}
-            className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
-          >
-            <option value="global">Global</option>
-            <option value="country">Country</option>
-            <option value="state">State / Province</option>
-            <option value="school">School</option>
-            <option value="classroom">Classroom</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="leaderboard-type" className="mb-2 block text-sm font-semibold text-ink">
-            Ranking type
-          </label>
-          <select
-            id="leaderboard-type"
-            value={selectedType}
-            onChange={(event) => {
-              pushParams({
-                type: event.target.value
-              });
-            }}
-            className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
-          >
-            <option value="individual">Individual</option>
-            <option value="classroom">Classroom</option>
-          </select>
-        </div>
+    <div className="grid gap-4 lg:grid-cols-4">
+      <div className="rounded-2xl border border-line bg-white p-4 shadow-soft">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Puzzle
+        </label>
+        <select
+          value={selectedPuzzle}
+          onChange={(e) =>
+            updateParams({
+              puzzle: e.target.value,
+              variant: ""
+            })
+          }
+          className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
+        >
+          {puzzleOptions.map((option) => (
+            <option key={option.slug} value={option.slug}>
+              {option.title}
+            </option>
+          ))}
+        </select>
       </div>
-    </section>
+
+      <div className="rounded-2xl border border-line bg-white p-4 shadow-soft">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Board / mode / variant
+        </label>
+        <select
+          value={selectedVariant}
+          onChange={(e) =>
+            updateParams({
+              variant: e.target.value
+            })
+          }
+          className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
+        >
+          {variantOptions.length === 0 ? (
+            <option value="">No variants available</option>
+          ) : (
+            variantOptions.map((option) => (
+              <option key={option.slug} value={option.slug}>
+                {option.title}
+              </option>
+            ))
+          )}
+        </select>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-white p-4 shadow-soft">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Scope
+        </label>
+        <select
+          value={selectedScope}
+          onChange={(e) =>
+            updateParams({
+              scope: e.target.value
+            })
+          }
+          className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
+        >
+          <option value="global">Global</option>
+          <option value="country">Country</option>
+          <option value="state">State / Province</option>
+          <option value="school">School</option>
+          <option value="classroom">Classroom</option>
+        </select>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-white p-4 shadow-soft">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Ranking type
+        </label>
+        <select
+          value={selectedType}
+          onChange={(e) =>
+            updateParams({
+              type: e.target.value
+            })
+          }
+          className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-pickle-400"
+        >
+          <option value="individual">Individual</option>
+          <option value="classroom">Classroom</option>
+        </select>
+      </div>
+    </div>
   );
 }

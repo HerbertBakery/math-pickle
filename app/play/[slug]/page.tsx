@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, BookOpen, Clock3, GraduationCap, School, Tag, Users } from "lucide-react";
+import type { Route } from "next";
 import { auth } from "@/auth";
 import { PuzzlePlayerFrame } from "@/components/puzzles/puzzle-player-frame";
 import { prisma } from "@/lib/prisma";
@@ -128,12 +129,12 @@ export default async function PuzzlePlayPage({
   const effectiveVariantSlug = assignmentContext?.puzzleVariantSlug ?? directVariant?.slug ?? null;
   const effectiveVariantTitle = assignmentContext?.puzzleVariantTitle ?? directVariant?.title ?? null;
 
-  const backHref =
+  const backHref: Route =
     assignmentContext && session.user.role === "STUDENT"
       ? "/dashboard/student"
       : assignmentContext && (session.user.role === "TEACHER" || session.user.role === "ADMIN")
-        ? `/dashboard/teacher/classes/${assignmentContext.classroomId}`
-        : `/puzzles/${puzzle.slug}`;
+        ? (`/dashboard/teacher/classes/${assignmentContext.classroomId}` as Route)
+        : (`/puzzles/${puzzle.slug}` as Route);
 
   const backLabel =
     assignmentContext && session.user.role === "STUDENT"

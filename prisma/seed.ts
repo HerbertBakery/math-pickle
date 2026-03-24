@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import {
   AssignmentStatus,
   ClassroomMembershipRole,
+  Prisma,
   PrismaClient,
   PuzzleScoreDirection,
   PuzzleType,
@@ -39,7 +40,7 @@ async function upsertVariant(args: {
       scoreDirection: args.scoreDirection,
       primaryMetricLabel: args.primaryMetricLabel,
       secondaryMetricLabel: args.secondaryMetricLabel,
-      configJson: args.configJson
+      configJson: args.configJson as Prisma.InputJsonValue
     },
     create: {
       puzzleId: args.puzzleId,
@@ -51,7 +52,7 @@ async function upsertVariant(args: {
       scoreDirection: args.scoreDirection,
       primaryMetricLabel: args.primaryMetricLabel,
       secondaryMetricLabel: args.secondaryMetricLabel,
-      configJson: args.configJson
+      configJson: args.configJson as Prisma.InputJsonValue
     }
   });
 }
