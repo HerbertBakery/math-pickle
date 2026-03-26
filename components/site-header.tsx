@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Route } from "next";
 import { auth } from "@/auth";
 import { ButtonLink } from "@/components/ui/button-link";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const publicNav: Array<{ href: Route; label: string }> = [
   { href: "/puzzles", label: "Puzzles" },
@@ -56,7 +55,7 @@ export async function SiteHeader() {
         : "Classroom puzzle platform";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-background/95 backdrop-blur-xl dark:border-white/10 dark:bg-[#121826]/96">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121826]/96 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-pickle-600 text-lg font-bold text-white shadow-soft">
@@ -64,10 +63,10 @@ export async function SiteHeader() {
           </div>
 
           <div>
-            <div className="text-[1.15rem] font-semibold tracking-[-0.02em] text-[#556170] transition hover:text-[#44515f] dark:text-[#B7C1CE] dark:hover:text-[#97A3B3]">
+            <div className="text-[1.15rem] font-semibold tracking-[-0.02em] text-[#B7C1CE] transition hover:text-[#97A3B3]">
               MathPickle
             </div>
-            <div className="text-[0.78rem] font-medium text-[#7a8795] dark:text-[#AAB4C2]">
+            <div className="text-[0.78rem] font-medium text-[#AAB4C2]">
               {statusText}
             </div>
           </div>
@@ -78,7 +77,7 @@ export async function SiteHeader() {
             <Link
               key={item.label}
               href={item.href}
-              className="text-[0.98rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-[#44515f] dark:text-[#B7C1CE] dark:hover:text-[#97A3B3]"
+              className="text-[0.98rem] font-semibold tracking-[-0.01em] text-[#B7C1CE] transition hover:text-[#97A3B3]"
             >
               {item.label}
             </Link>
@@ -88,7 +87,7 @@ export async function SiteHeader() {
         <div className="flex items-center gap-4">
           <Link
             href={dashboardHref}
-            className="hidden text-[0.95rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-[#44515f] lg:inline-flex dark:text-[#B7C1CE] dark:hover:text-[#97A3B3]"
+            className="hidden text-[0.95rem] font-semibold tracking-[-0.01em] text-[#B7C1CE] transition hover:text-[#97A3B3] lg:inline-flex"
           >
             {dashboardLabel}
           </Link>
@@ -98,10 +97,11 @@ export async function SiteHeader() {
               {role === "STUDENT" ? "Student" : "Teacher"}
             </ButtonLink>
           ) : (
-            <ButtonLink href="/teacher-signup">Teacher</ButtonLink>
+            <>
+              <ButtonLink href="/teacher-signup">Teacher</ButtonLink>
+              <ButtonLink href="/student-signup">Student</ButtonLink>
+            </>
           )}
-
-          <ThemeToggle />
         </div>
       </div>
     </header>

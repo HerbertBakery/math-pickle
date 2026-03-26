@@ -150,21 +150,15 @@ export default function HomePage() {
             <div className="absolute inset-0 -z-10 rounded-[2.8rem] bg-pickle-100/80 blur-3xl dark:bg-pickle-500/10" />
 
             <div className="overflow-hidden rounded-[2.3rem] border border-line bg-[#0d1725] p-6 shadow-soft dark:border-white/10">
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div>
-                  <Link
-                    href="/teacher-signup"
-                    className="text-base font-semibold tracking-[-0.01em] text-pickle-200 transition hover:text-white"
-                  >
-                    Engaged Classroom
-                  </Link>
-                  <div className="mt-1 text-sm text-slate-300">
-                    Real student energy. Real puzzle play.
-                  </div>
-                </div>
-
-                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/90">
-                  Live feel
+              <div className="mb-5">
+                <Link
+                  href="/teacher-signup"
+                  className="inline-flex items-center rounded-full border border-pickle-300/30 bg-pickle-500/12 px-5 py-2.5 text-base font-semibold tracking-[-0.02em] text-pickle-100 shadow-soft transition hover:border-pickle-300/50 hover:bg-pickle-500/18 sm:text-lg"
+                >
+                  Engage Your Classroom
+                </Link>
+                <div className="mt-3 text-sm text-slate-300">
+                  Real student energy. Real puzzle play.
                 </div>
               </div>
 

@@ -6,10 +6,6 @@
   color-scheme: dark;
 }
 
-html:not(.dark) {
-  color-scheme: light;
-}
-
 .dark {
   color-scheme: dark;
 }
@@ -36,14 +32,6 @@ body {
     radial-gradient(850px 500px at 100% 0%, rgba(28, 58, 90, 0.12), transparent 50%),
     linear-gradient(180deg, #0f1420 0%, #121826 100%);
   color: #eaeef4;
-}
-
-html:not(.dark) body {
-  background:
-    radial-gradient(circle at top left, rgba(111, 189, 71, 0.10), transparent 30%),
-    radial-gradient(circle at right 20%, rgba(243, 201, 107, 0.12), transparent 26%),
-    #fbfaf5;
-  color: #16202a;
 }
 
 a {

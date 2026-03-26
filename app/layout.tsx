@@ -16,28 +16,15 @@ export const metadata: Metadata = {
 
 const themeBootScript = `
 (function () {
-  try {
-    var stored = localStorage.getItem("mathpickle-theme");
-    var theme = stored === "light" ? "light" : "dark";
-    var root = document.documentElement;
-
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-
-    root.setAttribute("data-theme-ready", "true");
-  } catch (e) {
-    document.documentElement.classList.add("dark");
-    document.documentElement.setAttribute("data-theme-ready", "true");
-  }
+  var root = document.documentElement;
+  root.classList.add("dark");
+  root.setAttribute("data-theme-ready", "true");
 })();
 `;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <link rel="preload" as="image" href="/engage-poster.jpg" />
