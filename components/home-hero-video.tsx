@@ -1,58 +1,75 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 
 export function HomeHeroVideo() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    setIsReady(false);
+    let cancelled = false;
 
-    const handleReady = async () => {
+    const startPlayback = async () => {
       try {
-        video.currentTime = 0;
-      } catch {}
-
-      try {
+        video.defaultMuted = true;
+        video.muted = true;
+        video.playsInline = true;
         await video.play();
       } catch {}
+    };
 
+    const handleLoadedData = async () => {
+      if (cancelled) return;
+      setIsReady(true);
+      await startPlayback();
+    };
+
+    const handlePlaying = () => {
+      if (cancelled) return;
       setIsReady(true);
     };
 
-    const handleLoadedMetadata = () => {
-      try {
-        video.currentTime = 0;
-      } catch {}
-    };
+    video.defaultMuted = true;
+    video.muted = true;
+    video.autoplay = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.preload = "auto";
 
-    const handleCanPlay = () => {
-      handleReady();
-    };
+    video.addEventListener("loadeddata", handleLoadedData);
+    video.addEventListener("playing", handlePlaying);
 
-    video.pause();
-    try {
-      video.currentTime = 0;
-    } catch {}
-
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    video.addEventListener("canplay", handleCanPlay);
-
-    if (video.readyState >= 3) {
-      handleReady();
+    if (video.readyState >= 2) {
+      setIsReady(true);
+      void startPlayback();
     } else {
       video.load();
     }
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("canplay", handleCanPlay);
+      cancelled = true;
+      video.removeEventListener("loadeddata", handleLoadedData);
+      video.removeEventListener("playing", handlePlaying);
     };
   }, []);
+
+  function toggleMute() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (video.paused) {
+      void video.play().catch(() => {});
+    }
+  }
 
   return (
     <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0a111b]">
@@ -80,6 +97,15 @@ export function HomeHeroVideo() {
         controls={false}
         disablePictureInPicture
       />
+
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={isMuted ? "Turn sound on" : "Mute video"}
+        className="absolute bottom-4 right-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white shadow-soft backdrop-blur-md transition hover:bg-black/60"
+      >
+        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+      </button>
     </div>
   );
 }

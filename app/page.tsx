@@ -87,7 +87,7 @@ export default function HomePage() {
             className="group flex items-center justify-center gap-2 rounded-full border border-pickle-200 bg-white/80 px-4 py-2 text-sm font-semibold text-pickle-900 shadow-soft transition hover:border-pickle-400 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
           >
             <Sparkles className="h-4 w-4" />
-            Teachers are building classrooms now
+            Teachers are building FREE classrooms right now
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </Link>
         </div>
@@ -152,10 +152,13 @@ export default function HomePage() {
             <div className="overflow-hidden rounded-[2.3rem] border border-line bg-[#0d1725] p-6 shadow-soft dark:border-white/10">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  <div className="text-sm font-semibold tracking-[-0.01em] text-pickle-200">
+                  <Link
+                    href="/teacher-signup"
+                    className="text-base font-semibold tracking-[-0.01em] text-pickle-200 transition hover:text-white"
+                  >
                     Engaged Classroom
-                  </div>
-                  <div className="text-sm text-slate-300">
+                  </Link>
+                  <div className="mt-1 text-sm text-slate-300">
                     Real student energy. Real puzzle play.
                   </div>
                 </div>
@@ -253,16 +256,16 @@ export default function HomePage() {
 
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-2 lg:px-8 lg:pb-24">
         <div className="grid gap-6 lg:grid-cols-[.92fr_1.08fr]">
-          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-soft">
-            <div className="text-sm font-semibold uppercase tracking-[0.18em] text-pickle-200">
+          <div className="rounded-[2rem] border border-line bg-white/80 p-8 shadow-soft backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+            <div className="text-sm font-semibold uppercase tracking-[0.18em] text-pickle-700 dark:text-pickle-200">
               Why it works
             </div>
 
-            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
+            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink dark:text-white">
               Beautiful puzzles, stronger classroom use
             </h2>
 
-            <p className="mt-4 text-[1rem] leading-8 text-slate-300">
+            <p className="mt-4 text-[1rem] leading-8 text-muted dark:text-slate-300">
               The platform keeps the original MathPickle spirit while giving teachers a cleaner,
               sharper, more usable system for everyday classroom practice.
             </p>
@@ -272,9 +275,9 @@ export default function HomePage() {
             {whyItWorks.map((text) => (
               <div
                 key={text}
-                className="rounded-[1.35rem] border border-white/10 bg-white/5 p-5 shadow-soft"
+                className="rounded-[1.35rem] border border-line bg-white/80 p-5 shadow-soft backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
               >
-                <div className="text-sm font-medium leading-7 text-white">
+                <div className="text-sm font-medium leading-7 text-ink dark:text-white">
                   {text}
                 </div>
               </div>
