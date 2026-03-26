@@ -64,10 +64,10 @@ export async function SiteHeader() {
           </div>
 
           <div>
-            <div className="text-[1.15rem] font-semibold tracking-[-0.02em] text-[#556170] transition hover:text-ink dark:text-[#E6EAF0] dark:hover:text-white">
+            <div className="text-[1.15rem] font-semibold tracking-[-0.02em] text-[#556170] transition hover:text-[#44515f] dark:text-[#B7C1CE] dark:hover:text-[#97A3B3]">
               MathPickle
             </div>
-            <div className="text-[0.78rem] font-medium text-[#7a8795] dark:text-[#C7CFDA]">
+            <div className="text-[0.78rem] font-medium text-[#7a8795] dark:text-[#AAB4C2]">
               {statusText}
             </div>
           </div>
@@ -78,7 +78,7 @@ export async function SiteHeader() {
             <Link
               key={item.label}
               href={item.href}
-              className="text-[0.98rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-ink dark:text-[#E6EAF0] dark:hover:text-white"
+              className="text-[0.98rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-[#44515f] dark:text-[#B7C1CE] dark:hover:text-[#97A3B3]"
             >
               {item.label}
             </Link>
@@ -88,7 +88,7 @@ export async function SiteHeader() {
         <div className="flex items-center gap-4">
           <Link
             href={dashboardHref}
-            className="hidden text-[0.95rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-ink lg:inline-flex dark:text-[#E6EAF0] dark:hover:text-white"
+            className="hidden text-[0.95rem] font-semibold tracking-[-0.01em] text-[#556170] transition hover:text-[#44515f] lg:inline-flex dark:text-[#B7C1CE] dark:hover:text-[#97A3B3]"
           >
             {dashboardLabel}
           </Link>
